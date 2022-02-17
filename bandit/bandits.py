@@ -2,26 +2,9 @@ import math
 import random
 from typing import Union
 from abc import ABC, abstractmethod
+from bandit import ArmNotFoundException, RewardMissingException
 from bandit import process
 from bandit.arm import Arm
-
-
-class BanditNotFoundException(Exception):
-    def __init__(self, name):
-        self.message = F'bandit({name}) not found!'
-        super().__init__(self.message)
-
-
-class ArmNotFoundException(Exception):
-    def __init__(self, name):
-        self.message = F'arm({name}) not found!'
-        super().__init__(self.message)
-
-
-class RewardMissingException(Exception):
-    def __init__(self, episode: int):
-        self.message = F'round {episode} is not rewarded.'
-        super().__init__(self.message)
 
 
 class Bandit(process.ExperimentManager, ABC):
@@ -54,6 +37,8 @@ class Bandit(process.ExperimentManager, ABC):
         if self.episode_selected == self.episode:
             self.reward_arm(name, amount)
             self.update()
+        else:
+            raise RewardMissingException(self.episode)
 
     def arm(self, name:str):
         if res := list(filter(lambda x: x.name == name, self.arms)):
