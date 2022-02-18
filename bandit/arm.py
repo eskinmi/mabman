@@ -2,6 +2,12 @@ from typing import Union
 import numpy as np
 
 
+class ArmNotFoundException(Exception):
+    def __init__(self, name):
+        self.message = F'arm({name}) not found!'
+        super().__init__(self.message)
+
+
 class Arm:
 
     def __init__(self, name: str):
@@ -25,7 +31,13 @@ class Arm:
         return f'Arm({self.name})'
 
 
-class ArmNotFoundException(Exception):
-    def __init__(self, name):
-        self.message = F'arm({name}) not found!'
-        super().__init__(self.message)
+class BernoulliArm(Arm):
+
+    def __init__(self, p: float):
+        super().__init__()
+        self.p = p
+
+    def draw(self):
+        reward = np.random.choice([0,1], p=[1-self.p, self.p])
+        self.reward(reward)
+
