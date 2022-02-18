@@ -233,7 +233,7 @@ class ThompsonSampling(Bandit):
         super().__init__(episodes, reset_at_end)
 
     def mk_draws(self):
-        return [np.random.beta(arm.rewards + 1, self.episode - arm.rewards, size=1)
+        return [np.random.beta(arm.rewards + 1, arm.selections - arm.rewards, size=1)
                 for arm in self.arms
                 ]
 
