@@ -55,8 +55,4 @@ class Process:
         else:
             self.experiment.next_episode()
 
-    @staticmethod
-    def episode_log(arms: List[Arm]):
-        return [arm.selections for arm in arms], [arm.rewards for arm in arms]
-
 

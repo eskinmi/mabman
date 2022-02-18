@@ -209,6 +209,9 @@ class EpsilonGreedyVDBE(Bandit):
     def epsilon(self):
         return self.delta * self.action_value + (1 - self.delta) * self.prev_epsilon
 
+    def episode_log(self):
+        return [arm.selections for arm in self.arms], [arm.rewards for arm in self.arms]
+
     def choose_arm(self):
         if random.random() > self.epsilon:
             chosen_arm = max(self.arms, key=lambda x: x.mean_reward)
