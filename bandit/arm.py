@@ -7,16 +7,15 @@ class Arm:
         self.name = name
         self.selections = 0
         self.rewards = 0
+        self.mean_reward = 0.0
 
-    @property
-    def mean_reward(self):
-        if self.selections == 0:
-            return 0
-        else:
-            return self.rewards / self.selections
+    def update_mean_reward(self, reward):
+        k = 1 / self.selections if self.selections > 0 else 0
+        self.mean_reward = self.mean_reward + k * (reward - self.mean_reward)
 
-    def reward(self, amount: Union[int, float]):
-        self.rewards += amount
+    def reward(self, reward: Union[int, float]):
+        self.rewards += reward
+        self.update_mean_reward(reward)
 
     def select(self):
         self.selections += 1

@@ -45,8 +45,15 @@ class Bandit(process.ExperimentManager, ABC):
         pass
 
     @abstractmethod
-    def reward_arm(self, arm: Arm, amount: Union[int, float]):
+    def reward_arm(self, name: str, amount: Union[int, float]):
         pass
+
+    @property
+    def agent_mean_reward(self):
+        if self.episode > 0:
+            return self.total_rewards / self.episode
+        else:
+            return 0
 
     def choose(self):
         if not self.stop and self.episode > self.episode_selected:
@@ -55,27 +62,27 @@ class Bandit(process.ExperimentManager, ABC):
     def reward(self, name: str, amount: Union[int, float] = 1):
         if self.episode_selected == self.episode:
             self.reward_arm(name, amount)
-            self.update()
+            self.proceed()
         else:
             raise RewardMissingException(self.episode)
 
-    def arm(self, name:str):
+    def arm(self, name: str):
         if res := list(filter(lambda x: x.name == name, self.arms)):
             return res[0]
         else:
             raise ArmNotFoundException(name)
 
-    def add(self, name:str):
+    def add(self, name: str):
         self.arms.append(Arm(name))
 
-    def remove(self, name:str):
+    def remove(self, name: str):
         self.arms = [arm for arm in self.arms if arm.name != name]
 
 
 class UpperConfidenceBound(Bandit):
     name = 'upper-confidence-bound-bandit'
 
-    def __init__(self, episodes, reset_at_end, confidence:Union[int, float] = 2):
+    def __init__(self, episodes, reset_at_end, confidence: Union[int, float] = 2):
         super().__init__(episodes, reset_at_end)
         self.confidence = confidence
 
@@ -169,7 +176,7 @@ class EpsilonFirst(Bandit):
 
 
 class SoftmaxBoltzmann(Bandit):
-    name = 'epsilon-first-bandit'
+    name = 'softmax-boltzmann-bandit'
 
     def __init__(self, episodes, reset_at_end, temperature):
         super().__init__(episodes, reset_at_end)
@@ -188,36 +195,45 @@ class SoftmaxBoltzmann(Bandit):
         self.total_rewards += amount
         self.episode_rewarded += 1
 
-#
-# class BoltzmannVDBE(Bandit):
-#     name = 'epsilon-first-bandit'
-#
-#     def __init__(self, episodes, reset_at_end, inv_sensitivity):
-#         raise NotImplementedError()
-#         super().__init__(episodes, reset_at_end)
-#         self.inv_sensitivity = inv_sensitivity
-#
-#     @property
-#     def delta(self):
-#         return  1 / self.epsilon()
-#
-#     def action_value(self, arm):
-#         if prior := 1 - math.exp(-(arm.mean_reward - arm.prev_mean_reward) / self.inv_sensitivity):
-#             return (1 - prior) / (1 + prior)
-#
-#
-#
-#     def choose_arm(self):
-#         max_value = 0
-#         chosen_arm = None
-#         for arm in self.arms:
-#             # as_prior =
-#             value = 1 - as_prior / 1 + as_prior
-#         chosen_arm.select()
-#         self.episode_selected += 1
-#         return chosen_arm.name
-#
-#     def reward_arm(self, name: str, amount):
-#         self.arm(name).reward(amount)
-#         self.total_rewards += amount
-#         self.episode_rewarded += 1
+
+class EpsilonGreedyVDBE(Bandit):
+    name = 'epsilon-greedy-vdbe-bandit'
+
+    def __init__(self, episodes, reset_at_end, inverse_sensitivity, start_epsilon=0.3):
+        super().__init__(episodes, reset_at_end)
+        self.inv_sensitivity = inverse_sensitivity
+        self.start_epsilon = start_epsilon
+        self.previous_epsilon = self.start_epsilon
+        self.agent_previous_mean_reward = self.agent_mean_reward
+
+    @property
+    def delta(self):
+        if self.episode != 0:
+            return 1 / self.episode
+        else:
+            return 1
+
+    @property
+    def action_value(self):
+        prior = 1 - math.exp(-1 * abs(self.agent_mean_reward - self.agent_previous_mean_reward) / self.inv_sensitivity)
+        return (1 - prior) / (1 + prior)
+
+    @property
+    def cur_epsilon(self):
+        return self.delta * self.action_value + (1 - self.delta) * self.previous_epsilon
+
+    def choose_arm(self):
+        if random.random() > self.cur_epsilon:
+            chosen_arm = max(self.arms, key=lambda x: x.mean_reward)
+        else:
+            chosen_arm = random.choice(self.arms)
+        chosen_arm.select()
+        self.episode_selected += 1
+        return chosen_arm.name
+
+    def reward_arm(self, name: str, amount):
+        self.previous_epsilon = self.cur_epsilon
+        self.agent_previous_mean_reward = self.agent_mean_reward
+        self.arm(name).reward(amount)
+        self.total_rewards += amount
+        self.episode_rewarded += 1

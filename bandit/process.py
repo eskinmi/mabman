@@ -46,7 +46,7 @@ class ExperimentManager:
         self.experiment_num += 1
         self.experiment = Experiment(self.experiment_num, self.episodes)
 
-    def update(self):
+    def proceed(self):
         if self.experiment.is_completed:
             if self.reset_at_end:
                 self.new()
