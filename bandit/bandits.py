@@ -1,10 +1,29 @@
 import math
+import numpy as np
 import random
 from typing import Union
 from abc import ABC, abstractmethod
-from bandit import ArmNotFoundException, RewardMissingException
+# from . import ArmNotFoundException, RewardMissingException
 from bandit import process
 from bandit.arm import Arm
+
+
+class BanditNotFoundException(Exception):
+    def __init__(self, name):
+        self.message = F'bandit({name}) not found!'
+        super().__init__(self.message)
+
+
+class ArmNotFoundException(Exception):
+    def __init__(self, name):
+        self.message = F'arm({name}) not found!'
+        super().__init__(self.message)
+
+
+class RewardMissingException(Exception):
+    def __init__(self, episode: int):
+        self.message = F'round {episode} is not rewarded.'
+        super().__init__(self.message)
 
 
 class Bandit(process.ExperimentManager, ABC):
@@ -53,7 +72,7 @@ class Bandit(process.ExperimentManager, ABC):
         self.arms = [arm for arm in self.arms if arm.name != name]
 
 
-class UpperConfidenceBoundBandit(Bandit):
+class UpperConfidenceBound(Bandit):
     name = 'upper-confidence-bound-bandit'
 
     def __init__(self, episodes, reset_at_end, confidence:Union[int, float] = 2):
@@ -82,7 +101,7 @@ class UpperConfidenceBoundBandit(Bandit):
         self.episode_rewarded += 1
 
 
-class EpsilonGreedyBandit(Bandit):
+class EpsilonGreedy(Bandit):
     name = 'epsilon-greedy-bandit'
 
     def __init__(self, episodes, reset_at_end, epsilon: float = 0.1):
@@ -104,7 +123,7 @@ class EpsilonGreedyBandit(Bandit):
         self.episode_rewarded += 1
 
 
-class EpsilonDecreasingBandit(Bandit):
+class EpsilonDecay(Bandit):
     name = 'epsilon-decreasing-bandit'
 
     def __init__(self, episodes, reset_at_end, epsilon: float = 0.5, gamma: float = 0.1):
@@ -127,7 +146,7 @@ class EpsilonDecreasingBandit(Bandit):
         self.episode_rewarded += 1
 
 
-class EpsilonFirstBandit(Bandit):
+class EpsilonFirst(Bandit):
     name = 'epsilon-first-bandit'
 
     def __init__(self, episodes, reset_at_end, epsilon: float = 0.1):
@@ -149,15 +168,17 @@ class EpsilonFirstBandit(Bandit):
         self.episode_rewarded += 1
 
 
-class BoltzmannBandit(Bandit):
+class SoftmaxBoltzmann(Bandit):
     name = 'epsilon-first-bandit'
 
-    def __init__(self, episodes, reset_at_end):
+    def __init__(self, episodes, reset_at_end, temperature):
         super().__init__(episodes, reset_at_end)
+        self.temp = temperature
 
     def choose_arm(self):
-        denominator = sum([math.exp(a.mean_reward) for a in self.arms])
-        chosen_arm = max(self.arms, key=lambda x: math.exp(x.mean_reward) / denominator)
+        denominator = sum([math.exp(a.mean_reward / self.temp) for a in self.arms])
+        probabilities = [math.exp(arm.mean_reward / self.temp) / denominator for arm in self.arms]
+        chosen_arm = np.random.choice(self.arms, p=probabilities)
         chosen_arm.select()
         self.episode_selected += 1
         return chosen_arm.name
@@ -166,3 +187,37 @@ class BoltzmannBandit(Bandit):
         self.arm(name).reward(amount)
         self.total_rewards += amount
         self.episode_rewarded += 1
+
+#
+# class BoltzmannVDBE(Bandit):
+#     name = 'epsilon-first-bandit'
+#
+#     def __init__(self, episodes, reset_at_end, inv_sensitivity):
+#         raise NotImplementedError()
+#         super().__init__(episodes, reset_at_end)
+#         self.inv_sensitivity = inv_sensitivity
+#
+#     @property
+#     def delta(self):
+#         return  1 / self.epsilon()
+#
+#     def action_value(self, arm):
+#         if prior := 1 - math.exp(-(arm.mean_reward - arm.prev_mean_reward) / self.inv_sensitivity):
+#             return (1 - prior) / (1 + prior)
+#
+#
+#
+#     def choose_arm(self):
+#         max_value = 0
+#         chosen_arm = None
+#         for arm in self.arms:
+#             # as_prior =
+#             value = 1 - as_prior / 1 + as_prior
+#         chosen_arm.select()
+#         self.episode_selected += 1
+#         return chosen_arm.name
+#
+#     def reward_arm(self, name: str, amount):
+#         self.arm(name).reward(amount)
+#         self.total_rewards += amount
+#         self.episode_rewarded += 1
