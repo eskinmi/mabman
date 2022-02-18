@@ -45,6 +45,10 @@ class Bandit(process.Process, ABC):
     def total_rewards(self):
         return sum([arm.rewards for arm in self.arms])
 
+    @property
+    def episode_log(self):
+        return [arm.selections for arm in self.arms], [arm.rewards for arm in self.arms]
+
     def choose(self):
         if not self.stop and self.episode > self.episode_selected:
             return self.choose_arm()
@@ -206,9 +210,6 @@ class EpsilonGreedyVDBE(Bandit):
     @property
     def epsilon(self):
         return self.delta * self.action_value + (1 - self.delta) * self.prev_epsilon
-
-    def episode_log(self):
-        return [arm.selections for arm in self.arms], [arm.rewards for arm in self.arms]
 
     def choose_arm(self):
         if random.random() > self.epsilon:
