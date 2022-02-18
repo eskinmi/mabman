@@ -18,7 +18,6 @@ class Bandit(process.Process, ABC):
     def __init__(self, episodes: int, reset_at_end: bool):
         super().__init__(episodes, reset_at_end)
         self.arms = []
-        self.total_rewards = 0
         self.episode_rewarded = -1
         self.episode_selected = -1
 
@@ -41,6 +40,10 @@ class Bandit(process.Process, ABC):
             return self.total_rewards / self.episode
         else:
             return 0
+
+    @property
+    def total_rewards(self):
+        return sum([arm.rewards for arm in self.arms])
 
     def choose(self):
         if not self.stop and self.episode > self.episode_selected:
@@ -91,7 +94,6 @@ class UpperConfidenceBound(Bandit):
 
     def reward_arm(self, name: str, amount):
         self.arm(name).reward(amount)
-        self.total_rewards += amount
         self.episode_rewarded += 1
 
 
@@ -113,7 +115,6 @@ class EpsilonGreedy(Bandit):
 
     def reward_arm(self, name: str, amount):
         self.arm(name).reward(amount)
-        self.total_rewards += amount
         self.episode_rewarded += 1
 
 
@@ -136,7 +137,6 @@ class EpsilonDecay(Bandit):
 
     def reward_arm(self, name: str, amount):
         self.arm(name).reward(amount)
-        self.total_rewards += amount
         self.episode_rewarded += 1
 
 
@@ -158,7 +158,6 @@ class EpsilonFirst(Bandit):
 
     def reward_arm(self, name: str, amount):
         self.arm(name).reward(amount)
-        self.total_rewards += amount
         self.episode_rewarded += 1
 
 
@@ -179,7 +178,6 @@ class SoftmaxBoltzmann(Bandit):
 
     def reward_arm(self, name: str, amount):
         self.arm(name).reward(amount)
-        self.total_rewards += amount
         self.episode_rewarded += 1
 
 
@@ -225,5 +223,27 @@ class EpsilonGreedyVDBE(Bandit):
         self.prev_epsilon = self.epsilon
         self.agent_previous_mean_reward = self.agent_mean_reward
         self.arm(name).reward(amount)
-        self.total_rewards += amount
+        self.episode_rewarded += 1
+
+
+class ThompsonSampling(Bandit):
+    name = 'thompson-sampling-bandit'
+
+    def __init__(self, episodes, reset_at_end):
+        super().__init__(episodes, reset_at_end)
+
+    def mk_draws(self):
+        return [np.random.beta(arm.rewards + 1, self.episode - arm.rewards, size=1)
+                for arm in self.arms
+                ]
+
+    def choose_arm(self):
+        draws = self.mk_draws()
+        chosen_arm = self.arms[draws.index(max(draws))]
+        chosen_arm.select()
+        self.episode_selected += 1
+        return chosen_arm.name
+
+    def reward_arm(self, name: str, amount):
+        self.arm(name).reward(amount)
         self.episode_rewarded += 1

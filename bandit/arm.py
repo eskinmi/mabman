@@ -1,4 +1,5 @@
 from typing import Union
+import numpy as np
 
 
 class Arm:
@@ -13,7 +14,7 @@ class Arm:
         k = 1 / self.selections if self.selections > 0 else 0
         self.mean_reward = self.mean_reward + k * (reward - self.mean_reward)
 
-    def reward(self, reward: Union[int, float]):
+    def reward(self, reward: Union[int, float] = None):
         self.rewards += reward
         self.update_mean_reward(reward)
 
