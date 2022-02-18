@@ -27,17 +27,13 @@ class Arm:
     def select(self):
         self.selections += 1
 
-    def __repr__(self):
-        return f'Arm({self.name})'
-
 
 class BernoulliArm(Arm):
 
-    def __init__(self, p: float):
-        super().__init__()
+    def __init__(self, name, p: float):
+        super().__init__(name)
         self.p = p
 
     def draw(self):
         reward = np.random.choice([0,1], p=[1-self.p, self.p])
         self.reward(reward)
-

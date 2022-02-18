@@ -4,7 +4,7 @@ import random
 from typing import Union
 from abc import ABC, abstractmethod
 from bandit import process
-from bandit.arm import Arm, ArmNotFoundException
+from bandit.arm import Arm, BernoulliArm, ArmNotFoundException
 
 
 class MissingRewardException(Exception):
@@ -68,6 +68,9 @@ class Bandit(process.Process, ABC):
 
     def add(self, name: str):
         self.arms.append(Arm(name))
+
+    def add_bernoulli(self, name: str, p: float):
+        self.arms.append(BernoulliArm(name, p))
 
     def remove(self, name: str):
         self.arms = [arm for arm in self.arms if arm.name != name]
