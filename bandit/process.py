@@ -1,10 +1,12 @@
+from arm import Arm
+from typing import List
+
 
 class Experiment:
 
-    def __init__(self, n: int, episodes: int):
+    def __init__(self, episodes: int):
         self.episodes = episodes
         self.episode = 0
-        self.n = n
         self.logs = []
 
     def next_episode(self):
@@ -18,16 +20,15 @@ class Experiment:
         return self.episodes - 1 == self.episode
 
     def __repr__(self):
-        return F'(Experiment({n}), logs:{len(self.logs)})'
+        return F'(Experiment({self.episode}), logs:{len(self.logs)})'
 
 
-class ExperimentManager:
+class Process:
 
     def __init__(self, episodes: int, reset_at_end=False):
         self._experiments = []
         self.episodes = episodes
         self.reset_at_end = reset_at_end
-        self.experiment_num = -1
         self.experiment = None
         self.stop = False
         self.new()
@@ -43,8 +44,7 @@ class ExperimentManager:
     def new(self):
         if self.experiment:
             self._experiments.append(self.experiment)
-        self.experiment_num += 1
-        self.experiment = Experiment(self.experiment_num, self.episodes)
+        self.experiment = Experiment(self.episodes)
 
     def proceed(self):
         if self.experiment.is_completed:
@@ -55,7 +55,8 @@ class ExperimentManager:
         else:
             self.experiment.next_episode()
 
-    def log(self, data):
-        self.experiment.log(data)
+    @staticmethod
+    def episode_log(arms: List[Arm]):
+        return [arm.selections for arm in arms], [arm.rewards for arm in arms]
 
 

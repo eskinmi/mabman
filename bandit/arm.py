@@ -22,3 +22,9 @@ class Arm:
 
     def __repr__(self):
         return f'Arm({self.name})'
+
+
+class ArmNotFoundException(Exception):
+    def __init__(self, name):
+        self.message = F'arm({name}) not found!'
+        super().__init__(self.message)

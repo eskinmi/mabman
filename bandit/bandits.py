@@ -3,30 +3,17 @@ import numpy as np
 import random
 from typing import Union
 from abc import ABC, abstractmethod
-# from . import ArmNotFoundException, RewardMissingException
 from bandit import process
-from bandit.arm import Arm
+from bandit.arm import Arm, ArmNotFoundException
 
 
-class BanditNotFoundException(Exception):
-    def __init__(self, name):
-        self.message = F'bandit({name}) not found!'
-        super().__init__(self.message)
-
-
-class ArmNotFoundException(Exception):
-    def __init__(self, name):
-        self.message = F'arm({name}) not found!'
-        super().__init__(self.message)
-
-
-class RewardMissingException(Exception):
+class MissingRewardException(Exception):
     def __init__(self, episode: int):
         self.message = F'round {episode} is not rewarded.'
         super().__init__(self.message)
 
 
-class Bandit(process.ExperimentManager, ABC):
+class Bandit(process.Process, ABC):
 
     def __init__(self, episodes: int, reset_at_end: bool):
         super().__init__(episodes, reset_at_end)
@@ -64,7 +51,7 @@ class Bandit(process.ExperimentManager, ABC):
             self.reward_arm(name, amount)
             self.proceed()
         else:
-            raise RewardMissingException(self.episode)
+            raise MissingRewardException(self.episode)
 
     def arm(self, name: str):
         if res := list(filter(lambda x: x.name == name, self.arms)):
@@ -199,11 +186,11 @@ class SoftmaxBoltzmann(Bandit):
 class EpsilonGreedyVDBE(Bandit):
     name = 'epsilon-greedy-vdbe-bandit'
 
-    def __init__(self, episodes, reset_at_end, inverse_sensitivity, start_epsilon=0.3):
+    def __init__(self, episodes, reset_at_end, sigma, init_epsilon=0.3):
         super().__init__(episodes, reset_at_end)
-        self.inv_sensitivity = inverse_sensitivity
-        self.start_epsilon = start_epsilon
-        self.previous_epsilon = self.start_epsilon
+        self.sigma = sigma
+        self.init_epsilon = init_epsilon
+        self.prev_epsilon = self.init_epsilon
         self.agent_previous_mean_reward = self.agent_mean_reward
 
     @property
@@ -215,15 +202,15 @@ class EpsilonGreedyVDBE(Bandit):
 
     @property
     def action_value(self):
-        prior = 1 - math.exp(-1 * abs(self.agent_mean_reward - self.agent_previous_mean_reward) / self.inv_sensitivity)
+        prior = 1 - math.exp(-1 * abs(self.agent_mean_reward - self.agent_previous_mean_reward) / self.sigma)
         return (1 - prior) / (1 + prior)
 
     @property
-    def cur_epsilon(self):
-        return self.delta * self.action_value + (1 - self.delta) * self.previous_epsilon
+    def epsilon(self):
+        return self.delta * self.action_value + (1 - self.delta) * self.prev_epsilon
 
     def choose_arm(self):
-        if random.random() > self.cur_epsilon:
+        if random.random() > self.epsilon:
             chosen_arm = max(self.arms, key=lambda x: x.mean_reward)
         else:
             chosen_arm = random.choice(self.arms)
@@ -232,7 +219,7 @@ class EpsilonGreedyVDBE(Bandit):
         return chosen_arm.name
 
     def reward_arm(self, name: str, amount):
-        self.previous_epsilon = self.cur_epsilon
+        self.prev_epsilon = self.epsilon
         self.agent_previous_mean_reward = self.agent_mean_reward
         self.arm(name).reward(amount)
         self.total_rewards += amount
