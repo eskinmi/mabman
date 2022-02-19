@@ -8,6 +8,12 @@ class ArmNotFoundException(Exception):
         super().__init__(self.message)
 
 
+class ArmAlreadyExistsException(Exception):
+    def __init__(self, name):
+        self.message = F'arm({name}) already exists!'
+        super().__init__(self.message)
+
+
 class Arm:
 
     def __init__(self, name: str):
@@ -35,5 +41,4 @@ class BernoulliArm(Arm):
         self.p = p
 
     def draw(self):
-        reward = np.random.choice([0,1], p=[1-self.p, self.p])
-        self.reward(reward)
+        return np.random.choice([0, 1], p=[1-self.p, self.p])

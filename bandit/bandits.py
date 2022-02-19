@@ -4,7 +4,7 @@ import random
 from typing import Union
 from abc import ABC, abstractmethod
 from bandit import process
-from bandit.arm import Arm, BernoulliArm, ArmNotFoundException
+from bandit.arm import Arm, ArmNotFoundException, ArmAlreadyExistsException
 
 
 class MissingRewardException(Exception):
@@ -49,6 +49,10 @@ class Bandit(process.Process, ABC):
     def episode_log(self):
         return [arm.selections for arm in self.arms], [arm.rewards for arm in self.arms]
 
+    @property
+    def arm_names(self):
+        return [arm.name for arm in self.arms]
+
     def choose(self):
         if not self.stop and self.episode > self.episode_selected:
             return self.choose_arm()
@@ -66,11 +70,11 @@ class Bandit(process.Process, ABC):
         else:
             raise ArmNotFoundException(name)
 
-    def add(self, name: str):
-        self.arms.append(Arm(name))
-
-    def add_bernoulli(self, name: str, p: float):
-        self.arms.append(BernoulliArm(name, p))
+    def add(self, arm: Arm):
+        if arm.name not in self.arm_names:
+            self.arms.append(arm)
+        else:
+            raise ArmAlreadyExistsException(arm.name)
 
     def remove(self, name: str):
         self.arms = [arm for arm in self.arms if arm.name != name]
