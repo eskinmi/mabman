@@ -60,6 +60,7 @@ class Bandit(process.Process, ABC):
     def reward(self, name: str, amount: Union[int, float] = 1):
         if self.episode_selected == self.episode:
             self.reward_arm(name, amount)
+            self.experiment.log(self.episode_log)
             self.proceed()
         else:
             raise MissingRewardException(self.episode)
