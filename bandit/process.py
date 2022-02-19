@@ -3,13 +3,14 @@ class Experiment:
     def __init__(self, episodes: int):
         self.episodes = episodes
         self.episode = 0
-        self.logs = []
+        self.logs = {'selections' : [], 'rewards' : []}
 
     def next_episode(self):
         self.episode += 1
 
-    def log(self, data):
-        self.logs.append(data)
+    def log(self, actions, rewards):
+        self.logs['actions'].append(actions)
+        self.logs['rewards'].append(rewards)
 
     @property
     def is_completed(self):
@@ -51,3 +52,7 @@ class Process:
         else:
             self.experiment.next_episode()
 
+    def log_episode(self, name, reward, names):
+        actions = [0] * len(names)
+        actions[names.index(name)] = 1
+        self.experiment.log(actions, reward)

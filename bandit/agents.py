@@ -50,15 +50,11 @@ class Agent(process.Process, ABC):
         return sum([arm.selections for arm in self.arms])
 
     @property
-    def episode_log(self):
-        return [arm.selections for arm in self.arms], [arm.rewards for arm in self.arms]
-
-    @property
     def arm_names(self):
         return [arm.name for arm in self.arms]
 
     @property
-    def _is_choice_made(self):
+    def is_choice_made(self):
         return self.total_selections == self.episode + 1
 
     @property
@@ -70,9 +66,9 @@ class Agent(process.Process, ABC):
             return self.choose_arm()
 
     def reward(self, name: str, amount: Union[int, float] = 1):
-        if self._is_choice_made:
+        if self.is_choice_made:
             self.reward_arm(name, amount)
-            self.experiment.log(self.episode_log)
+            self.log_episode(name, amount, self.arm_names)
             self.proceed()
         else:
             raise MissingRewardException(self.episode)
