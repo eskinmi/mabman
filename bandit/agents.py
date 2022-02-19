@@ -13,7 +13,7 @@ class MissingRewardException(Exception):
         super().__init__(self.message)
 
 
-class Bandit(process.Process, ABC):
+class Agent(process.Process, ABC):
 
     def __init__(self, episodes: int, reset_at_end: bool):
         super().__init__(episodes, reset_at_end)
@@ -93,7 +93,7 @@ class Bandit(process.Process, ABC):
         self.arms = [arm for arm in self.arms if arm.name != name]
 
 
-class UpperConfidenceBound(Bandit):
+class UpperConfidenceBound(Agent):
     name = 'upper-confidence-bound-bandit'
 
     def __init__(self, episodes, reset_at_end, confidence: Union[int, float] = 2):
@@ -121,7 +121,7 @@ class UpperConfidenceBound(Bandit):
         self.episode_rewarded += 1
 
 
-class EpsilonGreedy(Bandit):
+class EpsilonGreedy(Agent):
     name = 'epsilon-greedy-bandit'
 
     def __init__(self, episodes, reset_at_end, epsilon: float = 0.1):
@@ -142,7 +142,7 @@ class EpsilonGreedy(Bandit):
         self.episode_rewarded += 1
 
 
-class EpsilonDecay(Bandit):
+class EpsilonDecay(Agent):
     name = 'epsilon-decreasing-bandit'
 
     def __init__(self, episodes, reset_at_end, epsilon: float = 0.5, gamma: float = 0.1):
@@ -164,7 +164,7 @@ class EpsilonDecay(Bandit):
         self.episode_rewarded += 1
 
 
-class EpsilonFirst(Bandit):
+class EpsilonFirst(Agent):
     name = 'epsilon-first-bandit'
 
     def __init__(self, episodes, reset_at_end, epsilon: float = 0.1):
@@ -185,7 +185,7 @@ class EpsilonFirst(Bandit):
         self.episode_rewarded += 1
 
 
-class SoftmaxBoltzmann(Bandit):
+class SoftmaxBoltzmann(Agent):
     name = 'softmax-boltzmann-bandit'
 
     def __init__(self, episodes, reset_at_end, temperature):
@@ -205,7 +205,7 @@ class SoftmaxBoltzmann(Bandit):
         self.episode_rewarded += 1
 
 
-class EpsilonGreedyVDBE(Bandit):
+class EpsilonGreedyVDBE(Agent):
     name = 'epsilon-greedy-vdbe-bandit'
 
     def __init__(self, episodes, reset_at_end, sigma, init_epsilon=0.3):
@@ -247,7 +247,7 @@ class EpsilonGreedyVDBE(Bandit):
         self.episode_rewarded += 1
 
 
-class ThompsonSampling(Bandit):
+class ThompsonSampling(Agent):
     name = 'thompson-sampling-bandit'
 
     def __init__(self, episodes, reset_at_end):
