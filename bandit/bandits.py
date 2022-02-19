@@ -46,6 +46,10 @@ class Bandit(process.Process, ABC):
         return sum([arm.rewards for arm in self.arms])
 
     @property
+    def total_selections(self):
+        return sum([arm.selections for arm in self.arms])
+
+    @property
     def episode_log(self):
         return [arm.selections for arm in self.arms], [arm.rewards for arm in self.arms]
 
@@ -53,12 +57,20 @@ class Bandit(process.Process, ABC):
     def arm_names(self):
         return [arm.name for arm in self.arms]
 
+    @property
+    def _is_choice_made(self):
+        return self.total_selections == self.episode + 1
+
+    @property
+    def episode_closed(self):
+        return self.total_selections == self.episode
+
     def choose(self):
-        if not self.stop and self.episode > self.episode_selected:
+        if not self.stop and self.episode_closed:
             return self.choose_arm()
 
     def reward(self, name: str, amount: Union[int, float] = 1):
-        if self.episode_selected == self.episode:
+        if self._is_choice_made:
             self.reward_arm(name, amount)
             self.experiment.log(self.episode_log)
             self.proceed()
