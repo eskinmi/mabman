@@ -20,6 +20,7 @@ class Arm:
         self.name = name
         self.selections = 0
         self.rewards = 0
+        self.regrets = 0
         self.mean_reward = 0.0
 
     def update_mean_reward(self, reward):
