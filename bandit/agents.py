@@ -201,7 +201,7 @@ class SoftmaxBoltzmann(Agent):
         self.episode_rewarded += 1
 
 
-class EpsilonGreedyVDBE(Agent):
+class VDBE(Agent):
     name = 'epsilon-greedy-vdbe-bandit'
 
     def __init__(self, episodes, reset_at_end, sigma, init_epsilon=0.3):
