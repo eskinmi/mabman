@@ -87,32 +87,6 @@ class Agent(process.Process, ABC):
         self.arms = [arm for arm in self.arms if arm.name != name]
 
 
-class UpperConfidenceBound(Agent):
-    name = 'upper-confidence-bound-bandit'
-
-    def __init__(self, episodes, reset_at_end, confidence: Union[int, float] = 2):
-        super().__init__(episodes, reset_at_end)
-        self.confidence = confidence
-
-    def choose_arm(self):
-        chosen_arm = None
-        max_upper_bound = 0
-        for arm in self.arms:
-            if arm.selections > 0:
-                delta_i = math.sqrt(self.confidence * math.log(self.episode+1) / arm.selections)
-                upper_bound = arm.mean_reward + delta_i
-            else:
-                upper_bound = 1e500
-            if upper_bound > max_upper_bound:
-                max_upper_bound = upper_bound
-                chosen_arm = arm
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_arm(self, name: str, reward):
-        self.arm(name).reward(reward)
-
-
 class EpsilonGreedy(Agent):
     name = 'epsilon-greedy-bandit'
 
@@ -243,6 +217,32 @@ class ThompsonSampling(Agent):
     def choose_arm(self):
         draws = self.mk_draws()
         chosen_arm = self.arms[draws.index(max(draws))]
+        chosen_arm.select()
+        return chosen_arm.name
+
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
+
+
+class UpperConfidenceBound(Agent):
+    name = 'upper-confidence-bound-bandit'
+
+    def __init__(self, episodes, reset_at_end, confidence: Union[int, float] = 2):
+        super().__init__(episodes, reset_at_end)
+        self.confidence = confidence
+
+    def choose_arm(self):
+        chosen_arm = None
+        max_upper_bound = 0
+        for arm in self.arms:
+            if arm.selections > 0:
+                delta_i = math.sqrt(self.confidence * math.log(self.episode+1) / arm.selections)
+                upper_bound = arm.mean_reward + delta_i
+            else:
+                upper_bound = 1e500
+            if upper_bound > max_upper_bound:
+                max_upper_bound = upper_bound
+                chosen_arm = arm
         chosen_arm.select()
         return chosen_arm.name
 
