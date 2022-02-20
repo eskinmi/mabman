@@ -72,8 +72,8 @@ class Agent(process.Process, ABC):
             raise MissingRewardException(self.episode)
 
     def arm(self, name: str):
-        if res := list(filter(lambda x: x.name == name, self.arms)):
-            return res[0]
+        if name in self.arm_names:
+            return self.arms[self.arm_names.index(name)]
         else:
             raise ArmNotFoundException(name)
 
