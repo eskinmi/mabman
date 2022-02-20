@@ -9,6 +9,23 @@ This library is set to serve various implementations of multi armed bandit theor
 * `VDBE`
 * `ThompsonSampling`
 
+## implentation
+
+```python
+from bandit import Arm, VDBE
+
+agent = VDBE(100, False, 0.5, 0.3)
+agent.add_arm(Arm('a',))
+agent.add_arm(Arm('b',))
+agent.add_arm(Arm('c',))
+agent.add_arm(Arm('d',))
+agent.add_arm(Arm('e',))
+
+# process
+agent.reward(agent.choose(), reward=1)
+
+```
+
 ## simulate
 
 ```python

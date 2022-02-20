@@ -31,7 +31,7 @@ class Agent(process.Process, ABC):
         pass
 
     @abstractmethod
-    def reward_arm(self, name: str, amount: Union[int, float]):
+    def reward_arm(self, name: str, reward: Union[int, float]):
         pass
 
     @property
@@ -65,10 +65,10 @@ class Agent(process.Process, ABC):
         if not self.stop and self.episode_closed:
             return self.choose_arm()
 
-    def reward(self, name: str, amount: Union[int, float] = 1):
+    def reward(self, name: str, reward: Union[int, float] = 1):
         if self.is_choice_made:
-            self.reward_arm(name, amount)
-            self.log_episode(name, amount, self.arm_names)
+            self.reward_arm(name, reward)
+            self.log_episode(name, reward, self.arm_names)
             self.proceed()
         else:
             raise MissingRewardException(self.episode)
@@ -112,8 +112,8 @@ class UpperConfidenceBound(Agent):
         self.episode_selected += 1
         return chosen_arm.name
 
-    def reward_arm(self, name: str, amount):
-        self.arm(name).reward(amount)
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
         self.episode_rewarded += 1
 
 
@@ -133,8 +133,8 @@ class EpsilonGreedy(Agent):
         self.episode_selected += 1
         return chosen_arm.name
 
-    def reward_arm(self, name: str, amount):
-        self.arm(name).reward(amount)
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
         self.episode_rewarded += 1
 
 
@@ -155,8 +155,8 @@ class EpsilonDecay(Agent):
         self.episode_selected += 1
         return chosen_arm.name
 
-    def reward_arm(self, name: str, amount):
-        self.arm(name).reward(amount)
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
         self.episode_rewarded += 1
 
 
@@ -176,8 +176,8 @@ class EpsilonFirst(Agent):
         chosen_arm.select()
         self.episode_selected += 1
 
-    def reward_arm(self, name: str, amount):
-        self.arm(name).reward(amount)
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
         self.episode_rewarded += 1
 
 
@@ -196,8 +196,8 @@ class SoftmaxBoltzmann(Agent):
         self.episode_selected += 1
         return chosen_arm.name
 
-    def reward_arm(self, name: str, amount):
-        self.arm(name).reward(amount)
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
         self.episode_rewarded += 1
 
 
@@ -236,10 +236,10 @@ class VDBE(Agent):
         self.episode_selected += 1
         return chosen_arm.name
 
-    def reward_arm(self, name: str, amount):
+    def reward_arm(self, name: str, reward):
         self.prev_epsilon = self.epsilon
         self.agent_previous_mean_reward = self.agent_mean_reward
-        self.arm(name).reward(amount)
+        self.arm(name).reward(reward)
         self.episode_rewarded += 1
 
 
@@ -261,6 +261,6 @@ class ThompsonSampling(Agent):
         self.episode_selected += 1
         return chosen_arm.name
 
-    def reward_arm(self, name: str, amount):
-        self.arm(name).reward(amount)
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
         self.episode_rewarded += 1
