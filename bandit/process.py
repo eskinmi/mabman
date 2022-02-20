@@ -3,7 +3,7 @@ class Experiment:
     def __init__(self, episodes: int):
         self.episodes = episodes
         self.episode = 0
-        self.logs = {'selections' : [], 'rewards' : []}
+        self.logs = {'actions': [], 'rewards': []}
 
     def next_episode(self):
         self.episode += 1
@@ -17,7 +17,7 @@ class Experiment:
         return self.episodes - 1 == self.episode
 
     def __repr__(self):
-        return F'(Experiment({self.episode}), logs:{len(self.logs)})'
+        return F'Experiment({self.episode})'
 
 
 class Process:

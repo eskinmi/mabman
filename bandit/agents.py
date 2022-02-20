@@ -79,13 +79,13 @@ class Agent(process.Process, ABC):
         else:
             raise ArmNotFoundException(name)
 
-    def add(self, arm: Arm):
+    def add_arm(self, arm: Arm):
         if arm.name not in self.arm_names:
             self.arms.append(arm)
         else:
             raise ArmAlreadyExistsException(arm.name)
 
-    def remove(self, name: str):
+    def remove_arm(self, name: str):
         self.arms = [arm for arm in self.arms if arm.name != name]
 
 
