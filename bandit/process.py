@@ -25,9 +25,13 @@ class Experiment:
 
 class Process:
 
-    def __init__(self, episodes: int, reset_at_end=False):
+    def __init__(self,
+                 episodes: int,
+                 reset_at_end=False,
+                 checkpoint_in_every=None
+                 ):
         self._experiments = []
-        self.checkpointer = checkpoint.CheckpointState(in_every=50)
+        self.checkpointer = checkpoint.CheckpointState(in_every=checkpoint_in_every)
         self.episodes = episodes
         self.reset_at_end = reset_at_end
         self.experiment = None

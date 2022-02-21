@@ -15,8 +15,12 @@ class MissingRewardException(Exception):
 
 class Agent(process.Process, ABC):
 
-    def __init__(self, episodes: int, reset_at_end: bool):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes: int,
+                 reset_at_end: bool,
+                 checkpoint_in_every: int
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
         self.arms = []
 
     @property
@@ -90,8 +94,13 @@ class Agent(process.Process, ABC):
 class EpsilonGreedy(Agent):
     name = 'epsilon-greedy-bandit'
 
-    def __init__(self, episodes, reset_at_end, epsilon: float = 0.1):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes,
+                 reset_at_end,
+                 checkpoint_in_every,
+                 epsilon: float = 0.1
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
         self.epsilon = epsilon
 
     def choose_arm(self):
@@ -109,8 +118,14 @@ class EpsilonGreedy(Agent):
 class EpsilonDecay(Agent):
     name = 'epsilon-decreasing-bandit'
 
-    def __init__(self, episodes, reset_at_end, epsilon: float = 0.5, gamma: float = 0.1):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes,
+                 reset_at_end,
+                 checkpoint_in_every,
+                 epsilon: float = 0.5,
+                 gamma: float = 0.1
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
         self.epsilon = epsilon
         self.gamma = gamma
 
@@ -129,8 +144,13 @@ class EpsilonDecay(Agent):
 class EpsilonFirst(Agent):
     name = 'epsilon-first-bandit'
 
-    def __init__(self, episodes, reset_at_end, epsilon: float = 0.1):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes,
+                 reset_at_end,
+                 checkpoint_in_every,
+                 epsilon: float = 0.1
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
         self.epsilon = epsilon
         self.start_exploration = self.episode * (1-self.epsilon) - 1
 
@@ -148,8 +168,13 @@ class EpsilonFirst(Agent):
 class SoftmaxBoltzmann(Agent):
     name = 'softmax-boltzmann-bandit'
 
-    def __init__(self, episodes, reset_at_end, temperature):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes,
+                 reset_at_end,
+                 checkpoint_in_every,
+                 temperature
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
         self.temp = temperature
 
     def choose_arm(self):
@@ -166,8 +191,14 @@ class SoftmaxBoltzmann(Agent):
 class VDBE(Agent):
     name = 'epsilon-greedy-vdbe-bandit'
 
-    def __init__(self, episodes, reset_at_end, sigma, init_epsilon=0.3):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes,
+                 reset_at_end,
+                 checkpoint_in_every,
+                 sigma,
+                 init_epsilon=0.3
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
         self.sigma = sigma
         self.init_epsilon = init_epsilon
         self.prev_epsilon = self.init_epsilon
@@ -206,8 +237,12 @@ class VDBE(Agent):
 class ThompsonSampling(Agent):
     name = 'thompson-sampling-bandit'
 
-    def __init__(self, episodes, reset_at_end):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes,
+                 reset_at_end,
+                 checkpoint_in_every
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
 
     def mk_draws(self):
         return [np.random.beta(arm.rewards + 1, arm.selections - arm.rewards + 1, size=1)
@@ -227,8 +262,13 @@ class ThompsonSampling(Agent):
 class UpperConfidenceBound(Agent):
     name = 'upper-confidence-bound-bandit'
 
-    def __init__(self, episodes, reset_at_end, confidence: Union[int, float] = 2):
-        super().__init__(episodes, reset_at_end)
+    def __init__(self,
+                 episodes,
+                 reset_at_end,
+                 checkpoint_in_every,
+                 confidence: Union[int, float] = 2
+                 ):
+        super().__init__(episodes, reset_at_end, checkpoint_in_every)
         self.confidence = confidence
 
     def choose_arm(self):
