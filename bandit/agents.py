@@ -17,10 +17,9 @@ class Agent(process.Process, ABC):
 
     def __init__(self,
                  episodes: int,
-                 reset_at_end: bool,
-                 checkpoint_in_every: int = None
+                 reset_at_end: bool
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
         self.arms = []
 
     @property
@@ -97,10 +96,9 @@ class EpsilonGreedy(Agent):
     def __init__(self,
                  episodes,
                  reset_at_end,
-                 epsilon: float = 0.1,
-                 checkpoint_in_every = None
+                 epsilon: float = 0.1
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
         self.epsilon = epsilon
 
     def choose_arm(self):
@@ -122,10 +120,9 @@ class EpsilonDecay(Agent):
                  episodes,
                  reset_at_end,
                  epsilon: float = 0.5,
-                 gamma: float = 0.1,
-                 checkpoint_in_every=None
+                 gamma: float = 0.1
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
         self.epsilon = epsilon
         self.gamma = gamma
 
@@ -147,10 +144,9 @@ class EpsilonFirst(Agent):
     def __init__(self,
                  episodes,
                  reset_at_end,
-                 epsilon: float = 0.1,
-                 checkpoint_in_every=None
+                 epsilon: float = 0.1
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
         self.epsilon = epsilon
         self.start_exploration = self.episode * (1-self.epsilon) - 1
 
@@ -171,10 +167,9 @@ class SoftmaxBoltzmann(Agent):
     def __init__(self,
                  episodes,
                  reset_at_end,
-                 temperature,
-                 checkpoint_in_every=None
+                 temperature
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
         self.temp = temperature
 
     def choose_arm(self):
@@ -195,10 +190,9 @@ class VDBE(Agent):
                  episodes,
                  reset_at_end,
                  sigma,
-                 init_epsilon=0.3,
-                 checkpoint_in_every=None
+                 init_epsilon=0.3
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
         self.sigma = sigma
         self.init_epsilon = init_epsilon
         self.prev_epsilon = self.init_epsilon
@@ -239,10 +233,9 @@ class ThompsonSampling(Agent):
 
     def __init__(self,
                  episodes,
-                 reset_at_end,
-                 checkpoint_in_every = None
+                 reset_at_end
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
 
     def mk_draws(self):
         return [np.random.beta(arm.rewards + 1, arm.selections - arm.rewards + 1, size=1)
@@ -265,10 +258,9 @@ class UpperConfidenceBound(Agent):
     def __init__(self,
                  episodes,
                  reset_at_end,
-                 confidence: Union[int, float] = 2,
-                 checkpoint_in_every=None
+                 confidence: Union[int, float] = 2
                  ):
-        super().__init__(episodes, reset_at_end, checkpoint_in_every)
+        super().__init__(episodes, reset_at_end)
         self.confidence = confidence
 
     def choose_arm(self):

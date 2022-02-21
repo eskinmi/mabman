@@ -1,6 +1,3 @@
-from bandit.utils import checkpoint
-
-
 class Experiment:
 
     def __init__(self, episodes: int):
@@ -31,7 +28,6 @@ class Process:
                  checkpoint_in_every=None
                  ):
         self._experiments = []
-        self._checkpointer = checkpoint.CheckpointState(in_every=checkpoint_in_every)
         self.episodes = episodes
         self.reset_at_end = reset_at_end
         self.experiment = None
@@ -52,7 +48,6 @@ class Process:
         self.experiment = Experiment(self.episodes)
 
     def proceed(self):
-        self._checkpointer.make(self)
         if self.experiment.is_completed:
             if self.reset_at_end:
                 self.new()
