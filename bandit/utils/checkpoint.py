@@ -13,14 +13,9 @@ class CheckpointNotFoundException(Exception):
         super().__init__(self.message)
 
 
-def mk_dir():
+def _mk_dir():
     if not os.path.exists(CHECKPOINT_DIR):
         os.makedirs(CHECKPOINT_DIR)
-
-
-def create(agent):
-    with open(CHECKPOINT_DIR + CHECKPOINT_1, 'wb') as f:
-        pickle.dump(agent, f)
 
 
 def _backup():
@@ -33,7 +28,12 @@ def _backup():
         )
 
 
-def get():
+def checkpoint(agent):
+    with open(CHECKPOINT_DIR + CHECKPOINT_1, 'wb') as f:
+        pickle.dump(agent, f)
+
+
+def load():
     if os.path.exists((file := CHECKPOINT_DIR + CHECKPOINT_1)):
         with open(file, 'rb') as f:
             agent = pickle.load(f)
@@ -49,12 +49,12 @@ class CheckpointState:
 
     def __init__(self, in_every=None):
         self.in_every = in_every
-        mk_dir()
+        _mk_dir()
 
     def make(self, agent):
         if self.in_every and\
                 agent.episode != 0 and\
                 agent.episode % self.in_every == 0:
             _backup()
-            create(agent)
+            checkpoint(agent)
 
