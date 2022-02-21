@@ -31,7 +31,7 @@ class Process:
                  checkpoint_in_every=None
                  ):
         self._experiments = []
-        self.checkpointer = checkpoint.CheckpointState(in_every=checkpoint_in_every)
+        self._checkpointer = checkpoint.CheckpointState(in_every=checkpoint_in_every)
         self.episodes = episodes
         self.reset_at_end = reset_at_end
         self.experiment = None
@@ -52,7 +52,7 @@ class Process:
         self.experiment = Experiment(self.episodes)
 
     def proceed(self):
-        self.checkpointer.make(self)
+        self._checkpointer.make(self)
         if self.experiment.is_completed:
             if self.reset_at_end:
                 self.new()
