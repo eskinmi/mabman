@@ -23,7 +23,7 @@ def _backup(path: str = '../checkpoints/'):
         )
 
 
-def checkpoint(path: str = '../checkpoints/', agent):
+def checkpoint(agent, path: str = '../checkpoints/'):
     with open(path + 'checkpoint_1.pkl', 'wb') as f:
         pickle.dump(agent, f)
 
@@ -52,5 +52,5 @@ class CheckpointState:
                 agent.episode != 0 and\
                 agent.episode % self.in_every == 0:
             _backup(self.path)
-            checkpoint(self.path, agent)
+            checkpoint(agent, self.path)
 
