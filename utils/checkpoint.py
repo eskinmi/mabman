@@ -24,10 +24,13 @@ def create(agent):
 
 
 def _backup():
+    if os.path.exists(CHECKPOINT_DIR + CHECKPOINT_2):
+        shutil.rmtree(CHECKPOINT_DIR + CHECKPOINT_2)
     if os.path.exists(CHECKPOINT_DIR + CHECKPOINT_1):
-        shutil.copyfile(CHECKPOINT_DIR + CHECKPOINT_1,
-                        CHECKPOINT_DIR + CHECKPOINT_2
-                        )
+        shutil.copyfile(
+            CHECKPOINT_DIR + CHECKPOINT_1,
+            CHECKPOINT_DIR + CHECKPOINT_2
+        )
 
 
 def get():
