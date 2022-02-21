@@ -1,3 +1,6 @@
+from utils import checkpoint
+
+
 class Experiment:
 
     def __init__(self, episodes: int):
@@ -24,6 +27,7 @@ class Process:
 
     def __init__(self, episodes: int, reset_at_end=False):
         self._experiments = []
+        self.checkpointer = checkpoint.CheckpointState(in_every=50)
         self.episodes = episodes
         self.reset_at_end = reset_at_end
         self.experiment = None
@@ -44,6 +48,7 @@ class Process:
         self.experiment = Experiment(self.episodes)
 
     def proceed(self):
+        self.checkpointer.make(self)
         if self.experiment.is_completed:
             if self.reset_at_end:
                 self.new()
