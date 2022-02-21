@@ -1,4 +1,4 @@
-from utils import checkpoint
+from bandit.utils import checkpoint
 
 
 class Experiment:

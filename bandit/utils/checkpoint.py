@@ -2,7 +2,7 @@ import pickle
 import os
 import shutil
 
-CHECKPOINT_DIR = './checkpoints/'
+CHECKPOINT_DIR = '../checkpoints/'
 CHECKPOINT_1 = 'checkpoint_1.pkl'
 CHECKPOINT_2 = 'checkpoint_2.pkl'
 
