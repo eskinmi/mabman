@@ -1,2 +1,2 @@
-from bandit.agents import *
+from bandit.agents.base import *
 from bandit.arm import Arm, BernoulliArm
