@@ -1,7 +1,8 @@
 # mabman
 
 This library is set to serve various implementations of multi armed bandit theory. Current implementations include:
-* `UpperConfidenceBound`
+* `UCB1`
+* `Hedge`
 * `EpsilonGreedy`
 * `EpsilonDecay`
 * `EpsilonFirst`
