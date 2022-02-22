@@ -267,8 +267,9 @@ class UCB1(Agent):
         if arm.selections == 0:
             return 1e500
         else:
-            delta_i = math.sqrt(self.confidence * math.log(self.episode + 1) / arm.selections)
-            return arm.mean_reward + delta_i
+            return arm.mean_reward + (
+                    self.confidence * math.sqrt(math.log(self.episode + 1) / arm.selections)
+            )
 
     def choose_arm(self):
         chosen_arm = max(self.arms, key=lambda x: self.calc_upper_bounds(x))
