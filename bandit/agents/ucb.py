@@ -1,4 +1,5 @@
-from base import *
+from bandit.agents.base import *
+import math
 
 
 class UCB1(Agent):

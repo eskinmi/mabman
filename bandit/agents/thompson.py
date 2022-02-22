@@ -1,4 +1,5 @@
-from base import *
+from bandit.agents.base import *
+import numpy as np
 
 
 class ThompsonSampling(Agent):

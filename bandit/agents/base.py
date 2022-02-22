@@ -1,6 +1,3 @@
-import math
-import numpy as np
-import random
 from typing import Union
 from abc import ABC, abstractmethod
 from bandit import process

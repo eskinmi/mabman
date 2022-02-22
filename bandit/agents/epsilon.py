@@ -1,4 +1,5 @@
-from base import *
+from bandit.agents.base import *
+import random
 
 
 class EpsilonGreedy(Agent):
@@ -70,4 +71,3 @@ class EpsilonFirst(Agent):
 
     def reward_arm(self, name: str, reward):
         self.arm(name).reward(reward)
-

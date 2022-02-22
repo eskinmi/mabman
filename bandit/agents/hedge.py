@@ -1,4 +1,6 @@
-from base import *
+from bandit.agents.base import *
+import math
+import random
 
 
 class Hedge(Agent):
