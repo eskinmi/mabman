@@ -23,7 +23,9 @@ agent.add_arm(Arm('d'))
 agent.add_arm(Arm('e'))
 
 # process
-agent.reward(agent.choose(), reward=1)
+name = agent.choose()
+rew = None # collect reward for arm here  
+agent.reward(name, reward=rew)
 
 ```
 
