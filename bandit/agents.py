@@ -252,8 +252,8 @@ class ThompsonSampling(Agent):
         self.arm(name).reward(reward)
 
 
-class UpperConfidenceBound(Agent):
-    name = 'upper-confidence-bound-bandit'
+class UCB1(Agent):
+    name = 'upper-confidence-bound-1-bandit'
 
     def __init__(self,
                  episodes,
@@ -263,20 +263,32 @@ class UpperConfidenceBound(Agent):
         super().__init__(episodes, reset_at_end)
         self.confidence = confidence
 
+    def calc_upper_bounds(self, arm):
+        if arm.selections == 0:
+            return 1e500
+        else:
+            delta_i = math.sqrt(self.confidence * math.log(self.episode + 1) / arm.selections)
+            return arm.mean_reward + delta_i
+
     def choose_arm(self):
-        chosen_arm = None
-        max_upper_bound = 0
-        for arm in self.arms:
-            if arm.selections > 0:
-                delta_i = math.sqrt(self.confidence * math.log(self.episode+1) / arm.selections)
-                upper_bound = arm.mean_reward + delta_i
-            else:
-                upper_bound = 1e500
-            if upper_bound > max_upper_bound:
-                max_upper_bound = upper_bound
-                chosen_arm = arm
+        chosen_arm = max(self.arms, key=lambda x: self.calc_upper_bounds(x))
         chosen_arm.select()
         return chosen_arm.name
+
+    # def choose_arm(self):
+    #     chosen_arm = None
+    #     max_upper_bound = 0
+    #     for arm in self.arms:
+    #         if arm.selections > 0:
+    #             delta_i = math.sqrt(self.confidence * math.log(self.episode+1) / arm.selections)
+    #             upper_bound = arm.mean_reward + delta_i
+    #         else:
+    #             upper_bound = 1e500
+    #         if upper_bound > max_upper_bound:
+    #             max_upper_bound = upper_bound
+    #             chosen_arm = arm
+    #     chosen_arm.select()
+    #     return chosen_arm.name
 
     def reward_arm(self, name: str, reward):
         self.arm(name).reward(reward)
