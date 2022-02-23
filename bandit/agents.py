@@ -1,10 +1,11 @@
-from typing import Union
+from typing import Union, Optional
 from abc import ABC, abstractmethod
 from bandit import process
 from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
 import random
 import math
 import numpy as np
+from bandit.callbacks import CheckPointState
 
 
 class MissingRewardException(Exception):
@@ -17,9 +18,10 @@ class Agent(process.Process, ABC):
 
     def __init__(self,
                  episodes: int = 100,
-                 reset_at_end: bool = False
+                 reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.arms = []
 
     @property
@@ -62,6 +64,11 @@ class Agent(process.Process, ABC):
     def episode_closed(self):
         return self.total_selections == self.episode
 
+    def load_weights(self, path):
+        ckp = CheckPointState(path)
+        agent = ckp.load(self)
+        return agent
+
     def choose(self):
         if not self.stop and self.episode_closed:
             return self.choose_arm()
@@ -96,9 +103,10 @@ class EpsilonGreedy(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  epsilon: float = 0.1
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.epsilon = epsilon
 
     def choose_arm(self):
@@ -119,10 +127,11 @@ class EpsilonDecay(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  epsilon: float = 0.5,
-                 gamma: float = 0.1
+                 gamma: float = 0.1,
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.epsilon = epsilon
         self.gamma = gamma
 
@@ -144,9 +153,10 @@ class EpsilonFirst(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
-                 epsilon: float = 0.1
+                 callbacks: Optional[list] = None,
+                 epsilon: float = 0.1,
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.epsilon = epsilon
         self.start_exploration = self.episode * (1-self.epsilon) - 1
 
@@ -167,9 +177,10 @@ class Hedge(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  temperature: Union[int, float] = 2
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.temperature = temperature
 
     def _threshold(self):
@@ -198,9 +209,10 @@ class SoftmaxBoltzmann(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  temperature: Union[int, float] = 2
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.temp = temperature
 
     def choose_arm(self):
@@ -220,8 +232,9 @@ class ThompsonSampling(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
 
     def mk_draws(self):
         return [np.random.beta(arm.rewards + 1, arm.selections - arm.rewards + 1, size=1)
@@ -244,9 +257,10 @@ class UCB1(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  confidence: Union[int, float] = 2
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.confidence = confidence
 
     def calc_upper_bounds(self, arm):
@@ -272,10 +286,11 @@ class VDBE(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  sigma: float = 0.5,
                  init_epsilon: float = 0.3
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.sigma = sigma
         self.init_epsilon = init_epsilon
         self._prev_epsilon = self.init_epsilon
@@ -317,9 +332,10 @@ class EXP3(Agent):
     def __init__(self,
                  episodes: int = 100,
                  reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
                  gamma: float = 0.1
                  ):
-        super().__init__(episodes, reset_at_end)
+        super().__init__(episodes, reset_at_end, callbacks)
         self.gamma = gamma
 
     def init_weights(self):

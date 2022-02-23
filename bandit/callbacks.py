@@ -1,8 +1,7 @@
-from bandit.agents import Agent
-from bandit.arms import Arm
-from bandit.process import Experiment
 import os
 import json
+from abc import ABC, abstractmethod
+from typing import List
 
 
 def _checkout_experiment(path, experiment):
@@ -17,18 +16,15 @@ def _checkout_arms(path, arms):
 
 
 def _checkout_agent_params(path, agent):
-    data = {
-        'name': agent.__class__.name,
-        'params': {k: v for k, v in agent.__dict__.items()
-                   if k not in ['experiment', 'arms'] and
-                   not k.startswith('_')
-                   }
-    }
+    data = {k: v for k, v in agent.__dict__.items()
+            if k not in ['experiment', 'arms', 'callbacks'] and
+            not k.startswith('_')
+            }
     with open(F'{path}/agent_params.json', 'w') as f:
         json.dump(data, f)
 
 
-def _checkin_agent_params(path):
+def _checkin_params(path):
     file = open(F'{path}/agent_params.json', 'r')
     params = json.load(file)
     file.close()
@@ -49,24 +45,31 @@ def _checkin_arms(path):
     return arms_params
 
 
-def _agent_names():
-    return {c.name: c for c in Agent.__subclasses__()}
+def _mkdirs(path):
+    if not os.path.exists(path):
+            os.makedirs(path)
+
+class CallBack(ABC):
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def call(self, process):
+        pass
 
 
 class CheckPointState:
 
     def __init__(self, path=None):
+        super().__init__()
         if path is None:
             self.path = './checkpoints'
         else:
             self.path = path
-        self._mkdirs()
+        _mkdirs(self.path)
 
-    def _mkdirs(self):
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-
-    def save(self, process: Agent):
+    def save(self, process):
         """
         Check-outing or checkpointing process for the
         agent. This allows users to load the agent back
@@ -74,24 +77,60 @@ class CheckPointState:
         Only checkouts the current experiment.
         The previous experiments logged in process.Process
         should be saved (if needed) by the user.
-
-        :param process: process.Process to checkpoint
-        :return: None
         """
         _checkout_agent_params(self.path, process)
         _checkout_experiment(self.path, process.experiment)
         _checkout_arms(self.path, process.arms)
 
-    def load(self):
-        params = _checkin_agent_params(self.path)
+    def load(self, agent):
+        from bandit.arms import Arm
+        from bandit.process import Experiment
+        params = _checkin_params(self.path)
         experiment_params = _checkin_experiment(self.path)
         experiment = Experiment()
         experiment.__dict__.update(experiment_params)
         arms_params = _checkin_arms(self.path)
         arms = [Arm(name=k).__dict__.update(v) for k, v in arms_params.items()]
-        agent_cls = _agent_names().pop(params['name'])()
+        agent_cls = agent()
         agent_cls.__dict__.update(params['params'])
         agent_cls.experiment = experiment
         agent_cls.arms = arms
         return agent_cls
 
+
+class CheckPoint(CallBack):
+
+    def __init__(self, in_every, path=None):
+        super().__init__()
+        self.ckp = CheckPointState(path)
+        self.in_every = in_every
+
+    def call(self, process):
+        if process.experiment.episode != 0 and\
+                process.experiment.episode % self.in_every == 0:
+            self.ckp.save(process)
+
+
+class HistoryLogger(CallBack):
+
+    def __init__(self, path=None):
+        super().__init__()
+        if path is None:
+            self.path = './history'
+        else:
+            self.path = path
+        _mkdirs(self.path)
+
+    def _log_history(self, hist):
+        with open(F'{self.path}/hist.json', 'w') as f:
+            json.dump(hist, f)
+
+    def call(self, process):
+        if process.experiment.is_completed:
+            self._log_history(process.experiment.hist)
+
+
+def callback(callbacks: List[CallBack], process):
+    if callbacks:
+        for cbk in callbacks:
+            cbk.call(process)
