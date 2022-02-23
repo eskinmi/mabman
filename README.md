@@ -9,6 +9,7 @@ This library is set to serve various implementations of multi armed bandit theor
 * `SoftmaxBoltzmann`
 * `VDBE`
 * `ThompsonSampling`
+* `EXP3`
 
 ## implentation
 
