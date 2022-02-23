@@ -1,19 +1,16 @@
-from utils import checkpoint
-
-
 class Experiment:
 
     def __init__(self, episodes: int):
         self.episodes = episodes
         self.episode = 0
-        self.logs = {'actions': [], 'rewards': []}
+        self.hist = {'actions': [], 'rewards': []}
 
     def next_episode(self):
         self.episode += 1
 
     def log(self, actions, rewards):
-        self.logs['actions'].append(actions)
-        self.logs['rewards'].append(rewards)
+        self.hist['actions'].append(actions)
+        self.hist['rewards'].append(rewards)
 
     @property
     def is_completed(self):
@@ -25,9 +22,11 @@ class Experiment:
 
 class Process:
 
-    def __init__(self, episodes: int, reset_at_end=False):
+    def __init__(self,
+                 episodes: int,
+                 reset_at_end=False
+                 ):
         self._experiments = []
-        self.checkpointer = checkpoint.CheckpointState(in_every=50)
         self.episodes = episodes
         self.reset_at_end = reset_at_end
         self.experiment = None
@@ -48,7 +47,6 @@ class Process:
         self.experiment = Experiment(self.episodes)
 
     def proceed(self):
-        self.checkpointer.make(self)
         if self.experiment.is_completed:
             if self.reset_at_end:
                 self.new()

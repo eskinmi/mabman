@@ -1,13 +1,15 @@
 # mabman
 
 This library is set to serve various implementations of multi armed bandit theory. Current implementations include:
-* `UpperConfidenceBound`
+* `UCB1`
+* `Hedge`
 * `EpsilonGreedy`
 * `EpsilonDecay`
 * `EpsilonFirst`
 * `SoftmaxBoltzmann`
 * `VDBE`
 * `ThompsonSampling`
+* `EXP3`
 
 ## implentation
 
@@ -22,7 +24,9 @@ agent.add_arm(Arm('d'))
 agent.add_arm(Arm('e'))
 
 # process
-agent.reward(agent.choose(), reward=1)
+name = agent.choose()
+rew = None # collect reward for arm here  
+agent.reward(name, reward=rew)
 
 ```
 
@@ -39,7 +43,7 @@ agent.add_arm(BernoulliArm('d', p=0.05))
 agent.add_arm(BernoulliArm('e', p=0.2))
 
 while not agent.stop:
-    name = agent.choose()
-    reward = agent.arm(name).draw()
-    agent.reward(name, reward)
+    if name := agent.choose():
+        amt = agent.arm(name).draw()
+        agent.reward(name, amt)
 ```
