@@ -43,7 +43,7 @@ agent.add_arm(BernoulliArm('d', p=0.05))
 agent.add_arm(BernoulliArm('e', p=0.2))
 
 while not agent.stop:
-    name = agent.choose()
-    reward = agent.arm(name).draw()
-    agent.reward(name, reward)
+    if name := agent.choose():
+        amt = agent.arm(name).draw()
+        agent.reward(name, amt)
 ```
