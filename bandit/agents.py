@@ -327,7 +327,7 @@ class EXP3(Agent):
         arm.weight *= math.exp(estimate * self.gamma / len(self.arms))
 
     def _arm_weight(self, arm):
-        return tuple((1.0 - self.gamma) * (arm.weight / self._w_sum()) + (self.gamma / len(self.arms)))
+        return (1.0 - self.gamma) * (arm.weight / self._w_sum()) + (self.gamma / len(self.arms))
 
     def _w_sum(self):
         return sum([arm.weight for arm in self.arms])
@@ -343,5 +343,5 @@ class EXP3(Agent):
 
     def reward_arm(self, name: str, reward):
         arm = self.arm(name)
-        self._update_arm_weight(arm)
+        self._update_arm_weight(arm, reward)
         arm.reward(reward)
