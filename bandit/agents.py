@@ -16,8 +16,8 @@ class MissingRewardException(Exception):
 class Agent(process.Process, ABC):
 
     def __init__(self,
-                 episodes: int,
-                 reset_at_end: bool
+                 episodes: int = 100,
+                 reset_at_end: bool = False
                  ):
         super().__init__(episodes, reset_at_end)
         self.arms = []
@@ -94,8 +94,8 @@ class EpsilonGreedy(Agent):
     name = 'epsilon-greedy-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
                  epsilon: float = 0.1
                  ):
         super().__init__(episodes, reset_at_end)
@@ -117,8 +117,8 @@ class EpsilonDecay(Agent):
     name = 'epsilon-decreasing-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
                  epsilon: float = 0.5,
                  gamma: float = 0.1
                  ):
@@ -142,8 +142,8 @@ class EpsilonFirst(Agent):
     name = 'epsilon-first-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
                  epsilon: float = 0.1
                  ):
         super().__init__(episodes, reset_at_end)
@@ -165,8 +165,8 @@ class Hedge(Agent):
     name = 'hedge-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
                  temperature: Union[int, float] = 2
                  ):
         super().__init__(episodes, reset_at_end)
@@ -196,9 +196,9 @@ class SoftmaxBoltzmann(Agent):
     name = 'softmax-boltzmann-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
-                 temperature
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
+                 temperature: Union[int, float] = 2
                  ):
         super().__init__(episodes, reset_at_end)
         self.temp = temperature
@@ -218,8 +218,8 @@ class ThompsonSampling(Agent):
     name = 'thompson-sampling-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
                  ):
         super().__init__(episodes, reset_at_end)
 
@@ -242,8 +242,8 @@ class UCB1(Agent):
     name = 'upper-confidence-bound-1-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
                  confidence: Union[int, float] = 2
                  ):
         super().__init__(episodes, reset_at_end)
@@ -270,10 +270,10 @@ class VDBE(Agent):
     name = 'epsilon-greedy-vdbe-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
-                 sigma,
-                 init_epsilon=0.3
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
+                 sigma: float = 0.5,
+                 init_epsilon: float = 0.3
                  ):
         super().__init__(episodes, reset_at_end)
         self.sigma = sigma
@@ -315,9 +315,9 @@ class EXP3(Agent):
     name = 'exponential-weight-bandit'
 
     def __init__(self,
-                 episodes,
-                 reset_at_end,
-                 gamma
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
+                 gamma: float = 0.1
                  ):
         super().__init__(episodes, reset_at_end)
         self.gamma = gamma

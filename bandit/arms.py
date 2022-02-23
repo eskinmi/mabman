@@ -45,4 +45,4 @@ class BernoulliArm(Arm):
         self.p = p
 
     def draw(self):
-        return np.random.choice([0, 1], p=[1-self.p, self.p])
+        return int(np.random.choice([0, 1], p=[1-self.p, self.p]))

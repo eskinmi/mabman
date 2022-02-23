@@ -1,6 +1,6 @@
 class Experiment:
 
-    def __init__(self, episodes: int):
+    def __init__(self, episodes: int = 1000):
         self.episodes = episodes
         self.episode = 0
         self.hist = {'actions': [], 'rewards': []}
