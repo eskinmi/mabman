@@ -34,6 +34,9 @@ class Arm:
     def select(self):
         self.selections += 1
 
+    def __repr__(self):
+        return F'Arm({self.name})'
+
 
 class BernoulliArm(Arm):
 
