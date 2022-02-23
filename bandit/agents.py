@@ -278,8 +278,8 @@ class VDBE(Agent):
         super().__init__(episodes, reset_at_end)
         self.sigma = sigma
         self.init_epsilon = init_epsilon
-        self.prev_epsilon = self.init_epsilon
-        self.agent_previous_mean_reward = self.agent_mean_reward
+        self._prev_epsilon = self.init_epsilon
+        self._previous_mean_reward = self.agent_mean_reward
 
     @property
     def delta(self):
@@ -290,12 +290,12 @@ class VDBE(Agent):
 
     @property
     def action_value(self):
-        prior = 1 - math.exp(-1 * abs(self.agent_mean_reward - self.agent_previous_mean_reward) / self.sigma)
+        prior = 1 - math.exp(-1 * abs(self.agent_mean_reward - self._previous_mean_reward) / self.sigma)
         return (1 - prior) / (1 + prior)
 
     @property
     def epsilon(self):
-        return self.delta * self.action_value + (1 - self.delta) * self.prev_epsilon
+        return self.delta * self.action_value + (1 - self.delta) * self._prev_epsilon
 
     def choose_arm(self):
         if random.random() > self.epsilon:
@@ -306,8 +306,8 @@ class VDBE(Agent):
         return chosen_arm.name
 
     def reward_arm(self, name: str, reward):
-        self.prev_epsilon = self.epsilon
-        self.agent_previous_mean_reward = self.agent_mean_reward
+        self._prev_epsilon = self.epsilon
+        self._previous_mean_reward = self.agent_mean_reward
         self.arm(name).reward(reward)
 
 
@@ -322,6 +322,11 @@ class EXP3(Agent):
         super().__init__(episodes, reset_at_end)
         self.gamma = gamma
 
+    def init_weights(self):
+        if self.episode == 0:
+            for arm in self.arms:
+                setattr(arm, 'weight', 1)
+
     def _update_arm_weight(self, arm, reward):
         estimate = reward / self._arm_weight(arm)
         arm.weight *= math.exp(estimate * self.gamma / len(self.arms))
@@ -333,11 +338,9 @@ class EXP3(Agent):
         return sum([arm.weight for arm in self.arms])
 
     def choose_arm(self):
-        if self.episode == 0:
-            for arm in self.arms:
-                setattr(arm, 'weight', 1)
-        _weight_dist = [self._arm_weight(arm) for arm in self.arms]
-        chosen_arm = np.random.choice(self.arms, p=_weight_dist)
+        self.init_weights()
+        w_dist = [self._arm_weight(arm) for arm in self.arms]
+        chosen_arm = np.random.choice(self.arms, p=w_dist)
         chosen_arm.select()
         return chosen_arm.name
 
