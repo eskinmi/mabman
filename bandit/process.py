@@ -61,7 +61,7 @@ class Process:
         else:
             self.experiment.next_episode()
 
-    def log_episode(self, name, reward, names):
+    def add_episode_logs(self, name, reward, names):
         actions = [0] * len(names)
         actions[names.index(name)] = 1
         self.experiment.log(actions, reward)

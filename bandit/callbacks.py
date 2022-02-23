@@ -4,26 +4,6 @@ from abc import ABC, abstractmethod
 from typing import List
 
 
-def _checkout_experiment(path, experiment):
-    with open(F'{path}/experiment.json', 'w') as f:
-        json.dump(experiment.__dict__, f)
-
-
-def _checkout_arms(path, arms):
-    data = {arm.name: arm.__dict__ for arm in arms}
-    with open(F'{path}/arms.json', 'w') as f:
-        json.dump(data, f)
-
-
-def _checkout_agent_params(path, agent):
-    data = {k: v for k, v in agent.__dict__.items()
-            if k not in ['experiment', 'arms', 'callbacks'] and
-            not k.startswith('_')
-            }
-    with open(F'{path}/agent_params.json', 'w') as f:
-        json.dump(data, f)
-
-
 def checkin_params(path):
     file = open(F'{path}/agent_params.json', 'r')
     params = json.load(file)
@@ -70,18 +50,27 @@ class CheckPointState:
             self.path = path
         _mkdirs(self.path)
 
+    def _checkout_experiment(self, experiment):
+        with open(F'{self.path}/experiment.json', 'w') as f:
+            json.dump(experiment.__dict__, f)
+
+    def _checkout_arms(self, arms):
+        data = {arm.name: arm.__dict__ for arm in arms}
+        with open(F'{self.path}/arms.json', 'w') as f:
+            json.dump(data, f)
+
+    def _checkout_agent_params(self, agent):
+        data = {k: v for k, v in agent.__dict__.items()
+                if k not in ['experiment', 'arms', 'callbacks'] and
+                not k.startswith('_')
+                }
+        with open(F'{self.path}/agent_params.json', 'w') as f:
+            json.dump(data, f)
+
     def save(self, process):
-        """
-        Check-outing or checkpointing process for the
-        agent. This allows users to load the agent back
-        from the latest state and keep training.
-        Only checkouts the current experiment.
-        The previous experiments logged in process.Process
-        should be saved (if needed) by the user.
-        """
-        _checkout_agent_params(self.path, process)
-        _checkout_experiment(self.path, process.experiment)
-        _checkout_arms(self.path, process.arms)
+        self._checkout_agent_params(process)
+        self._checkout_experiment(process.experiment)
+        self._checkout_arms(process.arms)
 
 
 class CheckPoint(CallBack):
@@ -107,13 +96,13 @@ class HistoryLogger(CallBack):
             self.path = path
         _mkdirs(self.path)
 
-    def _log_history(self, hist):
+    def _save_history(self, hist):
         with open(F'{self.path}/hist.json', 'w') as f:
             json.dump(hist, f)
 
     def call(self, process):
         if process.experiment.is_completed:
-            self._log_history(process.experiment.hist)
+            self._save_history(process.experiment.hist)
 
 
 def callback(callbacks: List[CallBack], process):

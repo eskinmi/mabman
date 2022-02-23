@@ -5,7 +5,7 @@ from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
 import random
 import math
 import numpy as np
-import bandit.callbacks
+from bandit import callbacks
 
 
 class MissingRewardException(Exception):
@@ -64,21 +64,6 @@ class Agent(process.Process, ABC):
     def episode_closed(self):
         return self.total_selections == self.episode
 
-    def load_weights(self, path):
-        params = bandit.callbacks.checkin_params(path)
-        experiment_params = bandit.callbacks.checkin_experiment(path)
-        experiment = process.Experiment()
-        experiment.__dict__.update(experiment_params)
-        arms_params = bandit.callbacks.checkin_arms(path)
-        arms = []
-        for k, v in arms_params.items():
-            arm = Arm(name=k)
-            arm.__dict__.update(v)
-            arms.append(arm)
-        self.__dict__.update(params)
-        self.experiment = experiment
-        self.arms = arms
-
     def choose(self):
         if not self.stop and self.episode_closed:
             return self.choose_arm()
@@ -86,7 +71,7 @@ class Agent(process.Process, ABC):
     def reward(self, name: str, reward: Union[int, float] = 1):
         if self.is_choice_made:
             self.reward_arm(name, reward)
-            self.log_episode(name, reward, self.arm_names)
+            self.add_episode_logs(name, reward, self.arm_names)
             self.proceed()
         else:
             raise MissingRewardException(self.episode)
@@ -105,6 +90,18 @@ class Agent(process.Process, ABC):
 
     def remove_arm(self, name: str):
         self.arms = [arm for arm in self.arms if arm.name != name]
+
+    def load_weights(self, path):
+        params = callbacks.checkin_params(path)
+        experiment_params = callbacks.checkin_experiment(path)
+        arms_params = callbacks.checkin_arms(path)
+        arms = [Arm(name) for name in arms_params]
+        [arm.__dict__.update(arms_params[arm.name]) for arm in arms]
+        experiment = process.Experiment()
+        experiment.__dict__.update(experiment_params)
+        self.__dict__.update(params)
+        self.arms = arms
+        self.experiment = experiment
 
 
 class EpsilonGreedy(Agent):
