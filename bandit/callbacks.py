@@ -47,7 +47,8 @@ def _checkin_arms(path):
 
 def _mkdirs(path):
     if not os.path.exists(path):
-            os.makedirs(path)
+        os.makedirs(path)
+
 
 class CallBack(ABC):
 
