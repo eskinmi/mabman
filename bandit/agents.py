@@ -70,7 +70,11 @@ class Agent(process.Process, ABC):
         experiment = process.Experiment()
         experiment.__dict__.update(experiment_params)
         arms_params = bandit.callbacks.checkin_arms(path)
-        arms = [Arm(name=k).__dict__.update(v) for k, v in arms_params.items()]
+        arms = []
+        for k, v in arms_params.items():
+            arm = Arm(name=k)
+            arm.__dict__.update(v)
+            arms.append(arm)
         self.__dict__.update(params)
         self.experiment = experiment
         self.arms = arms
