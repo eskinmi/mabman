@@ -5,7 +5,7 @@ from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
 import random
 import math
 import numpy as np
-from bandit.callbacks import CheckPointState
+import bandit.callbacks
 
 
 class MissingRewardException(Exception):
@@ -65,9 +65,15 @@ class Agent(process.Process, ABC):
         return self.total_selections == self.episode
 
     def load_weights(self, path):
-        ckp = CheckPointState(path)
-        agent = ckp.load(self)
-        return agent
+        params = bandit.callbacks.checkin_params(path)
+        experiment_params = bandit.callbacks.checkin_experiment(path)
+        experiment = process.Experiment()
+        experiment.__dict__.update(experiment_params)
+        arms_params = bandit.callbacks.checkin_arms(path)
+        arms = [Arm(name=k).__dict__.update(v) for k, v in arms_params.items()]
+        self.__dict__.update(params)
+        self.experiment = experiment
+        self.arms = arms
 
     def choose(self):
         if not self.stop and self.episode_closed:

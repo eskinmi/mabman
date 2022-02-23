@@ -24,21 +24,21 @@ def _checkout_agent_params(path, agent):
         json.dump(data, f)
 
 
-def _checkin_params(path):
+def checkin_params(path):
     file = open(F'{path}/agent_params.json', 'r')
     params = json.load(file)
     file.close()
     return params
 
 
-def _checkin_experiment(path):
+def checkin_experiment(path):
     file = open(F'{path}/experiment.json', 'r')
     experiment_params = json.load(file)
     file.close()
     return experiment_params
 
 
-def _checkin_arms(path):
+def checkin_arms(path):
     file = open(F'{path}/arms.json', 'r')
     arms_params = json.load(file)
     file.close()
@@ -82,21 +82,6 @@ class CheckPointState:
         _checkout_agent_params(self.path, process)
         _checkout_experiment(self.path, process.experiment)
         _checkout_arms(self.path, process.arms)
-
-    def load(self, agent):
-        from bandit.arms import Arm
-        from bandit.process import Experiment
-        params = _checkin_params(self.path)
-        experiment_params = _checkin_experiment(self.path)
-        experiment = Experiment()
-        experiment.__dict__.update(experiment_params)
-        arms_params = _checkin_arms(self.path)
-        arms = [Arm(name=k).__dict__.update(v) for k, v in arms_params.items()]
-        agent_cls = agent()
-        agent_cls.__dict__.update(params['params'])
-        agent_cls.experiment = experiment
-        agent_cls.arms = arms
-        return agent_cls
 
 
 class CheckPoint(CallBack):
