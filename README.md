@@ -15,8 +15,14 @@ This library is set to serve various implementations of multi armed bandit theor
 
 ```python
 from bandit import Arm, VDBE
+from bandit.callbacks import HistoryLogger, CheckPoint
 
-agent = VDBE(100, False, 0.5, 0.3)
+callbacks = [
+    HistoryLogger(),
+    CheckPoint(in_every=50)
+]
+agent = VDBE(100, False, sigma=.5, init_epsilon=0.3, callbacks=callbacks)
+
 agent.add_arm(Arm('a'))
 agent.add_arm(Arm('b'))
 agent.add_arm(Arm('c'))
@@ -25,21 +31,20 @@ agent.add_arm(Arm('e'))
 
 # process
 name = agent.choose()
-rew = None # collect reward for arm here  
+rew = 1 # collect reward for arm here  
 agent.reward(name, reward=rew)
-
 ```
 
 ## simulate
 
 ```python
-from bandit import VDBE, BernoulliArm
-from bandit.callbacks import HistoryLogger, CheckPoint
-callbacks = [HistoryLogger(), CheckPoint(50)]
-agent = VDBE(100, False, callbacks=callbacks)
-agent.add_arm(BernoulliArm('a', p=0.6))
-agent.add_arm(BernoulliArm('b', p=0.3))
-agent.add_arm(BernoulliArm('c', p=0.4))
+from bandit import VDBE, Arm
+agent = VDBE(100, False)
+
+agent.add_arm(Arm('a', p=0.6))
+agent.add_arm(Arm('b', p=0.3))
+agent.add_arm(Arm('c', p=0.4))
+
 while not agent.stop:
     if name := agent.choose():
         amt = agent.arm(name).draw()
