@@ -7,7 +7,7 @@ def arm_components(arms):
     Get arm weights as list of dicts.
     :param arms: List[Arm]
     :return:
-        List[Dict]]
+        List[Dict]
     """
     return [
         {'name': arm.name,
@@ -22,9 +22,11 @@ def experiment_params(experiment):
 
 
 def agent_params(agent):
-    return {k: v for k, v in agent.__dict__.items()
-            if k not in ['callbacks', 'arms', 'experiment']
-            and not k.startswith('_')
+    return {'name': agent.__class__.name,
+            'params': {k: v for k, v in agent.__dict__.items()
+                       if k not in ['callbacks', 'arms', 'experiment']
+                       and not k.startswith('_')
+                       }
             }
 
 
@@ -44,9 +46,9 @@ def agent_component_parts(agent):
     )
 
 
-def save_json(path, D):
+def save_json(path, data):
     with open(path, 'w') as f:
-        json.dump(D, f)
+        json.dump(data, f)
 
 
 def read_json(path):

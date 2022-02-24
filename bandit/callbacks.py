@@ -4,6 +4,12 @@ from abc import ABC, abstractmethod
 from typing import List
 
 
+class WrongBanditCheckPointError(Exception):
+    def __init__(self, name):
+        self.message = F'checkpoint bandit module do not match current : {name}'
+        super().__init__(self.message)
+
+
 class CallBack(ABC):
 
     def __init__(self):

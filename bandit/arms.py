@@ -16,8 +16,9 @@ class ArmAlreadyExistsException(Exception):
 
 class Arm:
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, p: float = None):
         self.name = name
+        self.p = p
         self.selections = 0
         self.rewards = 0
         self.regrets = 0
@@ -34,6 +35,12 @@ class Arm:
     def select(self):
         self.selections += 1
 
+    def draw(self):
+        if self.p:
+            return int(np.random.choice([0, 1], p=[1-self.p, self.p]))
+        else:
+            raise ValueError('please insert arg p to the arm.')
+
     def __repr__(self):
         return F'Arm({self.name})'
 
@@ -43,13 +50,3 @@ class Arm:
         if weights:
             arm.__dict__.update(weights)
         return arm
-
-
-class BernoulliArm(Arm):
-
-    def __init__(self, name, p: float):
-        super().__init__(name)
-        self.p = p
-
-    def draw(self):
-        return int(np.random.choice([0, 1], p=[1-self.p, self.p]))

@@ -64,7 +64,7 @@ class Agent(process.Process, ABC):
     def episode_closed(self):
         return self.total_selections == self.episode
 
-    def _update_params(self,  params:dict):
+    def _update_attrs(self,  params: dict):
         self.__dict__.update(params)
 
     def choose(self):
@@ -97,9 +97,15 @@ class Agent(process.Process, ABC):
     def load_weights(self, path):
         ckp_state = bandit.callbacks.CheckPointState(path)
         arms_weights, exp_params, agent_params = ckp_state.load_component_weights()
-        self.arms = [Arm.build(arm_weights['name'], arm_weights['weights']) for arm_weights in arms_weights]
-        self.experiment = process.Experiment.build(exp_params)
-        self._update_params(agent_params)
+        if self.name == agent_params['name']:
+            self.arms = [
+                Arm.build(arm_weights['name'], arm_weights['weights'])
+                for arm_weights in arms_weights
+            ]
+            self.experiment = process.Experiment.build(exp_params)
+            self._update_attrs(agent_params['params'])
+        else:
+            raise bandit.callbacks.WrongBanditCheckPointError(agent_params['name'])
 
 
 class EpsilonGreedy(Agent):
