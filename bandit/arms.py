@@ -37,6 +37,13 @@ class Arm:
     def __repr__(self):
         return F'Arm({self.name})'
 
+    @classmethod
+    def build(cls, name, weights=None):
+        arm = cls(name=name)
+        if weights:
+            arm.__dict__.update(weights)
+        return arm
+
 
 class BernoulliArm(Arm):
 

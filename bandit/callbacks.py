@@ -1,33 +1,7 @@
-import os
+from bandit import utils
 import json
 from abc import ABC, abstractmethod
 from typing import List
-
-
-def checkin_params(path):
-    file = open(F'{path}/agent_params.json', 'r')
-    params = json.load(file)
-    file.close()
-    return params
-
-
-def checkin_experiment(path):
-    file = open(F'{path}/experiment.json', 'r')
-    experiment_params = json.load(file)
-    file.close()
-    return experiment_params
-
-
-def checkin_arms(path):
-    file = open(F'{path}/arms.json', 'r')
-    arms_params = json.load(file)
-    file.close()
-    return arms_params
-
-
-def _mkdirs(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
 
 
 class CallBack(ABC):
@@ -48,29 +22,21 @@ class CheckPointState:
             self.path = './checkpoints'
         else:
             self.path = path
-        _mkdirs(self.path)
-
-    def _checkout_experiment(self, experiment):
-        with open(F'{self.path}/experiment.json', 'w') as f:
-            json.dump(experiment.__dict__, f)
-
-    def _checkout_arms(self, arms):
-        data = {arm.name: arm.__dict__ for arm in arms}
-        with open(F'{self.path}/arms.json', 'w') as f:
-            json.dump(data, f)
-
-    def _checkout_agent_params(self, agent):
-        data = {k: v for k, v in agent.__dict__.items()
-                if k not in ['experiment', 'arms', 'callbacks'] and
-                not k.startswith('_')
-                }
-        with open(F'{self.path}/agent_params.json', 'w') as f:
-            json.dump(data, f)
+        utils.mkdirs(self.path)
 
     def save(self, process):
-        self._checkout_agent_params(process)
-        self._checkout_experiment(process.experiment)
-        self._checkout_arms(process.arms)
+        arm_weights, experiment_params, agent_params = utils.agent_component_parts(process)
+        utils.save_json(self.path + '/agent_params', agent_params)
+        utils.save_json(self.path + '/experiment_params', experiment_params)
+        utils.save_json(self.path + '/arm_weights', arm_weights)
+
+    def load_component_weights(self):
+        return (
+            utils.read_json(self.path + '/arm_weights'),
+            utils.read_json(self.path + '/experiment_params'),
+            utils.read_json(self.path + '/agent_params'),
+
+        )
 
 
 class CheckPoint(CallBack):
@@ -94,15 +60,18 @@ class HistoryLogger(CallBack):
             self.path = './history'
         else:
             self.path = path
-        _mkdirs(self.path)
+        utils.mkdirs(self.path)
 
-    def _save_history(self, hist):
-        with open(F'{self.path}/hist.json', 'w') as f:
+    @staticmethod
+    def _save_history(path, hist):
+        with open(F'{path}/hist.json', 'w') as f:
             json.dump(hist, f)
 
     def call(self, process):
+        path = F'{self.path}/{str(process.experiment.experiment_id)}'
+        utils.mkdirs(path)
         if process.experiment.is_completed:
-            self._save_history(process.experiment.hist)
+            self._save_history(path, process.experiment.hist)
 
 
 def callback(callbacks: List[CallBack], process):

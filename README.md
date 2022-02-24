@@ -33,15 +33,13 @@ agent.reward(name, reward=rew)
 ## simulate
 
 ```python
-from bandit import BernoulliArm, ThompsonSampling
-
-agent = ThompsonSampling(100, False)
+from bandit import VDBE, BernoulliArm
+from bandit.callbacks import HistoryLogger, CheckPoint
+callbacks = [HistoryLogger(), CheckPoint(50)]
+agent = VDBE(100, False, callbacks=callbacks)
 agent.add_arm(BernoulliArm('a', p=0.6))
-agent.add_arm(BernoulliArm('b', p=0.1))
-agent.add_arm(BernoulliArm('c', p=0.05))
-agent.add_arm(BernoulliArm('d', p=0.05))
-agent.add_arm(BernoulliArm('e', p=0.2))
-
+agent.add_arm(BernoulliArm('b', p=0.3))
+agent.add_arm(BernoulliArm('c', p=0.4))
 while not agent.stop:
     if name := agent.choose():
         amt = agent.arm(name).draw()

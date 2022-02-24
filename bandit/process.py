@@ -6,6 +6,7 @@ class Experiment:
     def __init__(self, episodes: int = 1000):
         self.episodes = episodes
         self.episode = 0
+        self.experiment_id = 0
         self.hist = {'actions': [], 'rewards': []}
 
     def next_episode(self):
@@ -20,7 +21,14 @@ class Experiment:
         return self.episodes - 1 == self.episode
 
     def __repr__(self):
-        return F'Experiment({self.episode})'
+        return F'Experiment({self.experiment_id})'
+
+    @classmethod
+    def build(cls, params):
+        experiment = cls()
+        if params:
+            experiment.__dict__.update(params)
+        return experiment
 
 
 class Process:
@@ -50,6 +58,7 @@ class Process:
         if self.experiment:
             self._experiments.append(self.experiment)
         self.experiment = Experiment(self.episodes)
+        self.experiment.experiment_id += 1
 
     def proceed(self):
         callback(self.callbacks, self)

@@ -5,7 +5,7 @@ from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
 import random
 import math
 import numpy as np
-from bandit import callbacks
+import bandit.callbacks
 
 
 class MissingRewardException(Exception):
@@ -64,6 +64,9 @@ class Agent(process.Process, ABC):
     def episode_closed(self):
         return self.total_selections == self.episode
 
+    def _update_params(self,  params:dict):
+        self.__dict__.update(params)
+
     def choose(self):
         if not self.stop and self.episode_closed:
             return self.choose_arm()
@@ -92,16 +95,11 @@ class Agent(process.Process, ABC):
         self.arms = [arm for arm in self.arms if arm.name != name]
 
     def load_weights(self, path):
-        params = callbacks.checkin_params(path)
-        experiment_params = callbacks.checkin_experiment(path)
-        arms_params = callbacks.checkin_arms(path)
-        arms = [Arm(name) for name in arms_params]
-        [arm.__dict__.update(arms_params[arm.name]) for arm in arms]
-        experiment = process.Experiment()
-        experiment.__dict__.update(experiment_params)
-        self.__dict__.update(params)
-        self.arms = arms
-        self.experiment = experiment
+        ckp_state = bandit.callbacks.CheckPointState(path)
+        arms_weights, exp_params, agent_params = ckp_state.load_component_weights()
+        self.arms = [Arm.build(arm_weights['name'], arm_weights['weights']) for arm_weights in arms_weights]
+        self.experiment = process.Experiment.build(exp_params)
+        self._update_params(agent_params)
 
 
 class EpsilonGreedy(Agent):
