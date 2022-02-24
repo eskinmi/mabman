@@ -38,6 +38,10 @@ class Agent(process.Process, ABC):
         pass
 
     @property
+    def active_arms(self):
+        return list(filter(lambda x: x.active, self.arms))
+
+    @property
     def agent_mean_reward(self):
         if self.episode > 0:
             return self.total_rewards / self.episode
@@ -91,8 +95,8 @@ class Agent(process.Process, ABC):
         else:
             raise ArmAlreadyExistsException(arm.name)
 
-    def remove_arm(self, name: str):
-        self.arms = [arm for arm in self.arms if arm.name != name]
+    def deactivate_arm(self, name: str):
+        self.arm(name).active = False
 
     def load_weights(self, path):
         ckp_state = bandit.callbacks.CheckPointState(path)
@@ -122,9 +126,9 @@ class EpsilonGreedy(Agent):
 
     def choose_arm(self):
         if random.random() > self.epsilon:
-            chosen_arm = max(self.arms, key=lambda x: x.mean_reward)
+            chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         else:
-            chosen_arm = random.choice(self.arms)
+            chosen_arm = random.choice(self.active_arms)
         chosen_arm.select()
         return chosen_arm.name
 
@@ -148,9 +152,9 @@ class EpsilonDecay(Agent):
 
     def choose_arm(self):
         if random.random() > self.epsilon * (1-self.gamma)**self.episode:
-            chosen_arm = max(self.arms, key=lambda x: x.mean_reward)
+            chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         else:
-            chosen_arm = random.choice(self.arms)
+            chosen_arm = random.choice(self.active_arms)
         chosen_arm.select()
         return chosen_arm.name
 
@@ -173,9 +177,9 @@ class EpsilonFirst(Agent):
 
     def choose_arm(self):
         if self.episode >= self.start_exploration:
-            chosen_arm = random.choice(self.arms)
+            chosen_arm = random.choice(self.active_arms)
         else:
-            chosen_arm = max(self.arms, key=lambda x: x.mean_reward)
+            chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         chosen_arm.select()
 
     def reward_arm(self, name: str, reward):
@@ -195,14 +199,14 @@ class Hedge(Agent):
         self.temperature = temperature
 
     def _threshold(self):
-        return sum([math.exp(arm.rewards / self.temperature) for arm in self.arms])
+        return sum([math.exp(arm.rewards / self.temperature) for arm in self.active_arms])
 
     def choose_arm(self):
         th = self._threshold()
         z = random.random()
-        chosen_arm = self.arms[-1]  # default
+        chosen_arm = self.active_arms[-1]  # default
         p_sum = 0
-        for arm in self.arms:
+        for arm in self.active_arms:
             p_sum += math.exp(arm.rewards / self.temperature) / th
             if p_sum > z:
                 chosen_arm = arm
@@ -227,9 +231,9 @@ class SoftmaxBoltzmann(Agent):
         self.temp = temperature
 
     def choose_arm(self):
-        denominator = sum([math.exp(a.mean_reward / self.temp) for a in self.arms])
-        probabilities = [math.exp(arm.mean_reward / self.temp) / denominator for arm in self.arms]
-        chosen_arm = np.random.choice(self.arms, p=probabilities)
+        denominator = sum([math.exp(a.mean_reward / self.temp) for a in self.active_arms])
+        probabilities = [math.exp(arm.mean_reward / self.temp) / denominator for arm in self.active_arms]
+        chosen_arm = np.random.choice(self.active_arms, p=probabilities)
         chosen_arm.select()
         return chosen_arm.name
 
@@ -249,12 +253,12 @@ class ThompsonSampling(Agent):
 
     def mk_draws(self):
         return [np.random.beta(arm.rewards + 1, arm.selections - arm.rewards + 1, size=1)
-                for arm in self.arms
+                for arm in self.active_arms
                 ]
 
     def choose_arm(self):
         draws = self.mk_draws()
-        chosen_arm = self.arms[draws.index(max(draws))]
+        chosen_arm = self.active_arms[draws.index(max(draws))]
         chosen_arm.select()
         return chosen_arm.name
 
@@ -283,7 +287,7 @@ class UCB1(Agent):
             )
 
     def choose_arm(self):
-        chosen_arm = max(self.arms, key=lambda x: self.calc_upper_bounds(x))
+        chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
         chosen_arm.select()
         return chosen_arm.name
 
@@ -325,9 +329,9 @@ class VDBE(Agent):
 
     def choose_arm(self):
         if random.random() > self.epsilon:
-            chosen_arm = max(self.arms, key=lambda x: x.mean_reward)
+            chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         else:
-            chosen_arm = random.choice(self.arms)
+            chosen_arm = random.choice(self.active_arms)
         chosen_arm.select()
         return chosen_arm.name
 
@@ -351,23 +355,23 @@ class EXP3(Agent):
 
     def init_weights(self):
         if self.episode == 0:
-            for arm in self.arms:
+            for arm in self.active_arms:
                 setattr(arm, 'weight', 1)
 
     def _update_arm_weight(self, arm, reward):
         estimate = reward / self._arm_weight(arm)
-        arm.weight *= math.exp(estimate * self.gamma / len(self.arms))
+        arm.weight *= math.exp(estimate * self.gamma / len(self.active_arms))
 
     def _arm_weight(self, arm):
-        return (1.0 - self.gamma) * (arm.weight / self._w_sum()) + (self.gamma / len(self.arms))
+        return (1.0 - self.gamma) * (arm.weight / self._w_sum()) + (self.gamma / len(self.active_arms))
 
     def _w_sum(self):
-        return sum([arm.weight for arm in self.arms])
+        return sum([arm.weight for arm in self.active_arms])
 
     def choose_arm(self):
         self.init_weights()
-        w_dist = [self._arm_weight(arm) for arm in self.arms]
-        chosen_arm = np.random.choice(self.arms, p=w_dist)
+        w_dist = [self._arm_weight(arm) for arm in self.active_arms]
+        chosen_arm = np.random.choice(self.active_arms, p=w_dist)
         chosen_arm.select()
         return chosen_arm.name
 

@@ -23,6 +23,7 @@ class Arm:
         self.rewards = 0
         self.regrets = 0
         self.mean_reward = 0.0
+        self.active = True
 
     def update_mean_reward(self, reward):
         k = 1 / self.selections if self.selections > 0 else 0
@@ -39,7 +40,7 @@ class Arm:
         if self.p:
             return int(np.random.choice([0, 1], p=[1-self.p, self.p]))
         else:
-            raise ValueError('please insert arg p to the arm.')
+            raise ValueError('please input the probability argument `p` to the arm.')
 
     def __repr__(self):
         return F'Arm({self.name})'

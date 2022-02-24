@@ -44,7 +44,7 @@ class Process:
         self.callbacks = callbacks
         self.experiment = None
         self.stop = False
-        self.new()
+        self.new_experiment()
 
     @property
     def episode(self):
@@ -54,7 +54,7 @@ class Process:
     def experiments(self):
         return self._experiments + [self.experiment]
 
-    def new(self):
+    def new_experiment(self):
         if self.experiment:
             self._experiments.append(self.experiment)
         self.experiment = Experiment(self.episodes)
@@ -64,7 +64,7 @@ class Process:
         callback(self.callbacks, self)
         if self.experiment.is_completed:
             if self.reset_at_end:
-                self.new()
+                self.new_experiment()
             else:
                 self.stop = True
         else:
