@@ -11,7 +11,7 @@ This library is set to serve various implementations of multi armed bandit theor
 * `ThompsonSampling`
 * `EXP3`
 
-## implentation
+## implementation
 
 ```python
 from bandit import Arm, VDBE
