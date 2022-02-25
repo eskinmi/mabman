@@ -68,16 +68,11 @@ class HistoryLogger(CallBack):
             self.path = path
         utils.mkdirs(self.path)
 
-    @staticmethod
-    def _save_history(path, hist):
-        with open(F'{path}/hist.json', 'w') as f:
-            json.dump(hist, f)
-
     def call(self, process):
         path = F'{self.path}/{str(process.experiment.experiment_id)}'
         utils.mkdirs(path)
         if process.experiment.is_completed:
-            self._save_history(path, process.experiment.hist)
+            utils.save_json(path + '/hist.json', process.experiment.hist)
 
 
 def callback(callbacks: List[CallBack], process):
