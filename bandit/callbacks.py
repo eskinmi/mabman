@@ -1,4 +1,4 @@
-from bandit import utils
+from bandit import util
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -27,18 +27,18 @@ class CheckPointState:
             self.path = './checkpoints'
         else:
             self.path = path
-        utils.mkdirs(self.path)
+        util.mkdirs(self.path)
 
     def save_component_weights(self, process):
-        arm_weights, experiment_params, agent_params = utils.agent_component_parts(process)
-        utils.save_json(self.path + '/agent_params', agent_params)
-        utils.save_json(self.path + '/experiment_params', experiment_params)
-        utils.save_json(self.path + '/arm_weights', arm_weights)
+        arm_weights, experiment_params, agent_params = util.agent_component_parts(process)
+        util.save_json(self.path + '/agent_params', agent_params)
+        util.save_json(self.path + '/experiment_params', experiment_params)
+        util.save_json(self.path + '/arm_weights', arm_weights)
 
     def load_component_weights(self):
-        arm_weights = utils.read_json(self.path + '/arm_weights')
-        experiment_params = utils.read_json(self.path + '/experiment_params')
-        agent_params = utils.read_json(self.path + '/agent_params')
+        arm_weights = util.read_json(self.path + '/arm_weights')
+        experiment_params = util.read_json(self.path + '/experiment_params')
+        agent_params = util.read_json(self.path + '/agent_params')
         return arm_weights, experiment_params, agent_params
 
 
@@ -63,16 +63,22 @@ class HistoryLogger(CallBack):
             self.path = './history'
         else:
             self.path = path
-        utils.mkdirs(self.path)
+        util.mkdirs(self.path)
 
     def call(self, process):
         path = F'{self.path}/{str(process.experiment.experiment_id)}'
-        utils.mkdirs(path)
+        util.mkdirs(path)
         if process.experiment.is_completed:
-            utils.save_json(path + '/hist.json', process.experiment.hist)
+            util.save_json(path + '/hist.json', process.experiment.hist)
 
 
-def callback(callbacks: List[CallBack], process):
+def apply_callbacks(callbacks: List[CallBack], process):
     if callbacks:
         for cbk in callbacks:
             cbk.call(process)
+
+
+def _set_callbacks_list(callbacks: List[CallBack]):
+    if any(not isinstance(clb, CallBack) for clb in callbacks):
+        raise ValueError('callbacks should be of callbacks.CallBack type.')
+    return callbacks

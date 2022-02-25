@@ -1,11 +1,23 @@
+__all__ = [
+    'EpsilonGreedy',
+    'EpsilonDecay',
+    'EpsilonFirst',
+    'Hedge',
+    'SoftmaxBoltzmann',
+    'ThompsonSampling',
+    'UCB1',
+    'VDBE',
+    'EXP3'
+]
+
+import random
+import math
+import numpy as np
 from typing import Union, Optional
 from abc import ABC, abstractmethod
 from bandit import process
 from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
-import random
-import math
-import numpy as np
-import bandit.callbacks
+from bandit.callbacks import WrongBanditCheckPointError, CheckPointState
 
 
 class MissingRewardException(Exception):
@@ -99,7 +111,7 @@ class Agent(process.Process, ABC):
         self.arm(name).active = False
 
     def overlay_weights(self, path):
-        ckp = bandit.callbacks.CheckPointState(path)
+        ckp = CheckPointState(path)
         arms_weights, exp_params, agent_params = ckp.load_component_weights()
         if self.name == agent_params['name']:
             self.arms = [
@@ -109,7 +121,7 @@ class Agent(process.Process, ABC):
             self.experiment = process.Experiment.build(exp_params)
             self._update_attrs(agent_params['params'])
         else:
-            raise bandit.callbacks.WrongBanditCheckPointError(agent_params['name'])
+            raise WrongBanditCheckPointError(agent_params['name'])
 
 
 class EpsilonGreedy(Agent):
@@ -151,7 +163,7 @@ class EpsilonDecay(Agent):
         self.gamma = gamma
 
     def choose_arm(self):
-        if random.random() > self.epsilon * (1-self.gamma)**self.episode:
+        if random.random() > self.epsilon * (1 - self.gamma)**self.episode:
             chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         else:
             chosen_arm = random.choice(self.active_arms)

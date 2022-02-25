@@ -1,4 +1,4 @@
-from bandit.callbacks import callback
+from bandit.callbacks import apply_callbacks, _set_callbacks_list
 
 
 class Experiment:
@@ -41,7 +41,7 @@ class Process:
         self._experiments = []
         self.episodes = episodes
         self.reset_at_end = reset_at_end
-        self.callbacks = callbacks
+        self.callbacks = _set_callbacks_list(callbacks)
         self.experiment = None
         self.experiment_num = 0
         self.stop = False
@@ -63,7 +63,7 @@ class Process:
         self.experiment.experiment_id = self.experiment_num
 
     def proceed(self):
-        callback(self.callbacks, self)
+        apply_callbacks(self.callbacks, self)
         if self.experiment.is_completed:
             if self.reset_at_end:
                 self.new_experiment()
