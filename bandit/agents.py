@@ -98,9 +98,9 @@ class Agent(process.Process, ABC):
     def deactivate_arm(self, name: str):
         self.arm(name).active = False
 
-    def load_weights(self, path):
-        ckp_state = bandit.callbacks.CheckPointState(path)
-        arms_weights, exp_params, agent_params = ckp_state.load_component_weights()
+    def overlay_weights(self, path):
+        ckp = bandit.callbacks.CheckPointState(path)
+        arms_weights, exp_params, agent_params = ckp.load_component_weights()
         if self.name == agent_params['name']:
             self.arms = [
                 Arm.build(arm_weights['name'], arm_weights['weights'])

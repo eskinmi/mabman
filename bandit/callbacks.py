@@ -1,5 +1,4 @@
 from bandit import utils
-import json
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -30,19 +29,17 @@ class CheckPointState:
             self.path = path
         utils.mkdirs(self.path)
 
-    def save(self, process):
+    def save_component_weights(self, process):
         arm_weights, experiment_params, agent_params = utils.agent_component_parts(process)
         utils.save_json(self.path + '/agent_params', agent_params)
         utils.save_json(self.path + '/experiment_params', experiment_params)
         utils.save_json(self.path + '/arm_weights', arm_weights)
 
     def load_component_weights(self):
-        return (
-            utils.read_json(self.path + '/arm_weights'),
-            utils.read_json(self.path + '/experiment_params'),
-            utils.read_json(self.path + '/agent_params'),
-
-        )
+        arm_weights = utils.read_json(self.path + '/arm_weights')
+        experiment_params = utils.read_json(self.path + '/experiment_params')
+        agent_params = utils.read_json(self.path + '/agent_params')
+        return arm_weights, experiment_params, agent_params
 
 
 class CheckPoint(CallBack):
@@ -55,7 +52,7 @@ class CheckPoint(CallBack):
     def call(self, process):
         if process.experiment.episode != 0 and\
                 process.experiment.episode % self.in_every == 0:
-            self.ckp.save(process)
+            self.ckp.save_component_weights(process)
 
 
 class HistoryLogger(CallBack):
