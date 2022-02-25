@@ -43,6 +43,7 @@ class Process:
         self.reset_at_end = reset_at_end
         self.callbacks = callbacks
         self.experiment = None
+        self.experiment_num = 0
         self.stop = False
         self.new_experiment()
 
@@ -58,7 +59,8 @@ class Process:
         if self.experiment:
             self._experiments.append(self.experiment)
         self.experiment = Experiment(self.episodes)
-        self.experiment.experiment_id += 1
+        self.experiment_num += 1
+        self.experiment.experiment_id = self.experiment_num
 
     def proceed(self):
         callback(self.callbacks, self)
