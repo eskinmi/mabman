@@ -63,5 +63,3 @@ def test_deactivate_arm(base_agent):
     base_agent.deactivate_arm('c')
     assert base_agent.arm('c').active is False
     assert 'c' not in [arm.name for arm in base_agent.active_arms]
-
-
