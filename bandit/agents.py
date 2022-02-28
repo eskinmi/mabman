@@ -62,6 +62,7 @@ class Agent(process.Process, ABC):
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.arms = []
+        self.init_arm_vars = dict()
 
     @property
     @abstractmethod
@@ -107,6 +108,9 @@ class Agent(process.Process, ABC):
     def episode_closed(self):
         return self.total_selections == self.episode
 
+    def set_init_arm_attrs(self, **kwargs):
+        self.init_arm_vars = kwargs
+
     def _update_attrs(self,  params: dict):
         self.__dict__.update(params)
 
@@ -132,6 +136,7 @@ class Agent(process.Process, ABC):
 
     def add_arm(self, arm: Arm):
         if arm.name not in self.arm_names:
+            [setattr(arm, k, v) for k, v in self.init_arm_vars.items()]
             self.arms.append(arm)
         else:
             raise ArmAlreadyExistsException(arm.name)
@@ -347,12 +352,8 @@ class UCB2(Agent):
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.alpha = alpha
+        self.set_init_arm_attrs(r=0)
         self._ss = SuccessiveSelector()
-
-    def _init_r(self):
-        if self.episode == 0:
-            for arm in self.active_arms:
-                setattr(arm, 'r', 0)
 
     def calc_upper_bounds(self, arm):
         if arm.selections == 0:
@@ -371,7 +372,6 @@ class UCB2(Agent):
         return math.ceil((1 + self.alpha) ** r)
 
     def choose_arm(self):
-        self._init_r()
         if self._ss.in_recursion:
             chosen_arm_name = self._ss.step()
             chosen_arm = self.arm(chosen_arm_name)
@@ -443,11 +443,7 @@ class EXP3(Agent):
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.gamma = gamma
-
-    def _init_weights(self):
-        if self.episode == 0:
-            for arm in self.active_arms:
-                setattr(arm, 'weight', 1)
+        self.set_init_arm_attrs(weight=1)
 
     def _update_arm_weight(self, arm, reward):
         estimate = reward / self._arm_weight(arm)
@@ -460,7 +456,6 @@ class EXP3(Agent):
         return sum([arm.weight for arm in self.active_arms])
 
     def choose_arm(self):
-        self._init_weights()
         w_dist = [self._arm_weight(arm) for arm in self.active_arms]
         chosen_arm = np.random.choice(self.active_arms, p=w_dist)
         chosen_arm.select()
