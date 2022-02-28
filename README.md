@@ -1,6 +1,11 @@
 # mabman
 
-This library is set to serve various implementations of multi armed bandit theory. Current implementations include:
+This library is set to serve various implementations of multi armed bandit problem. The implementation includes some  intuitive 
+additions to it, that the users will need when putting the MAB into practice. 
+The package includes callbacks, which allows users to `log` and `checkpoint` their agent. Also, it allows users to run continuous / multiple
+experiments without any code changes.  
+
+Current agent implementations include:
 * `UCB1`
 * `UCB2`
 * `Hedge`
@@ -12,8 +17,7 @@ This library is set to serve various implementations of multi armed bandit theor
 * `ThompsonSampling`
 * `EXP3`
 
-## implementation
-
+##  usage
 ```python
 from bandit.agents import VDBE
 from bandit.arms import Arm
@@ -33,12 +37,10 @@ agent.add_arm(Arm('e'))
 
 # process
 name = agent.choose()
-rew = 1 # collect reward for arm here  
-agent.reward(name, reward=rew)
+r = 1 # collect reward for arm here  
+agent.reward(name, reward=r)
 ```
-
-## simulate
-
+## simulation
 ```python
 from bandit.agents import EXP3
 from bandit.arms import Arm
@@ -50,6 +52,6 @@ agent.add_arm(Arm('c', p=0.4))
 
 while not agent.stop:
     if name := agent.choose():
-        amt = agent.arm(name).draw()
-        agent.reward(name, amt)
+        r = agent.arm(name).draw()
+        agent.reward(name, r)
 ```
