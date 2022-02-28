@@ -16,6 +16,7 @@ Current agent implementations include:
 * `VDBE`
 * `ThompsonSampling`
 * `EXP3`
+* `FPL`
 
 ##  usage
 ```python

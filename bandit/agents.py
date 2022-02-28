@@ -8,7 +8,8 @@ __all__ = [
     'UCB1',
     'UCB2',
     'VDBE',
-    'EXP3'
+    'EXP3',
+    'FPL'
 ]
 
 import random
@@ -34,18 +35,18 @@ class SuccessiveSelector:
         self.n = 0
 
     @property
-    def in_recursion(self):
+    def in_recurrence(self):
         if self.arm_name is not None and self.n > 0:
             return True
         else:
             return False
 
-    def set_recursion(self, name, n):
+    def set_recurrence(self, name, n):
         self.arm_name = name
         self.n = n
 
     def step(self):
-        if self.in_recursion:
+        if self.in_recurrence:
             self.n -= 1
             return self.arm_name
         else:
@@ -372,12 +373,12 @@ class UCB2(Agent):
         return math.ceil((1 + self.alpha) ** r)
 
     def choose_arm(self):
-        if self._ss.in_recursion:
+        if self._ss.in_recurrence:
             chosen_arm_name = self._ss.step()
             chosen_arm = self.arm(chosen_arm_name)
         else:
             chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
-            self._ss.set_recursion(chosen_arm.name, self.calc_n_recursion(chosen_arm.r))
+            self._ss.set_recurrence(chosen_arm.name, self.calc_n_recursion(chosen_arm.r))
             chosen_arm.r += 1
         chosen_arm.select()
         return chosen_arm.name
@@ -446,17 +447,17 @@ class EXP3(Agent):
         self.set_init_arm_attrs(weight=1)
 
     def _update_arm_weight(self, arm, reward):
-        estimate = reward / self._arm_weight(arm)
+        estimate = reward / self._arm_proba(arm)
         arm.weight *= math.exp(estimate * self.gamma / len(self.active_arms))
 
-    def _arm_weight(self, arm):
+    def _arm_proba(self, arm):
         return (1.0 - self.gamma) * (arm.weight / self._w_sum()) + (self.gamma / len(self.active_arms))
 
     def _w_sum(self):
         return sum([arm.weight for arm in self.active_arms])
 
     def choose_arm(self):
-        w_dist = [self._arm_weight(arm) for arm in self.active_arms]
+        w_dist = [self._arm_proba(arm) for arm in self.active_arms]
         chosen_arm = np.random.choice(self.active_arms, p=w_dist)
         chosen_arm.select()
         return chosen_arm.name
@@ -465,3 +466,27 @@ class EXP3(Agent):
         arm = self.arm(name)
         self._update_arm_weight(arm, reward)
         arm.reward(reward)
+
+
+class FPL(Agent):
+    name = 'follow-perturbed-leader-bandit'
+
+    def __init__(self,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
+                 noise_param: float = 1
+                 ):
+        super().__init__(episodes, reset_at_end, callbacks)
+        self.noise_param = noise_param
+
+    def _noise(self):
+        return float(np.random.exponential(self.noise_param))
+
+    def choose_arm(self):
+        chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward + self._noise())
+        chosen_arm.select()
+        return chosen_arm.name
+
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
