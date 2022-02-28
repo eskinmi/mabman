@@ -14,7 +14,8 @@ This library is set to serve various implementations of multi armed bandit theor
 ## implementation
 
 ```python
-from bandit import Arm, VDBE
+from bandit.agents import VDBE
+from bandit.arms import Arm
 from bandit.callbacks import HistoryLogger, CheckPoint
 
 callbacks = [
@@ -38,8 +39,9 @@ agent.reward(name, reward=rew)
 ## simulate
 
 ```python
-from bandit import VDBE, Arm
-agent = VDBE(100, False)
+from bandit.agents import EXP3
+from bandit.arms import Arm
+agent = EXP3(100, False)
 
 agent.add_arm(Arm('a', p=0.6))
 agent.add_arm(Arm('b', p=0.3))
