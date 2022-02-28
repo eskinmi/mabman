@@ -475,7 +475,7 @@ class FPL(Agent):
                  episodes: int = 100,
                  reset_at_end: bool = False,
                  callbacks: Optional[list] = None,
-                 noise_param: float = 1
+                 noise_param: float = 0.1
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.noise_param = noise_param
