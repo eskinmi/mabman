@@ -79,6 +79,7 @@ def apply_callbacks(callbacks: List[CallBack], process):
 
 
 def _set_callbacks_list(callbacks: List[CallBack]):
-    if any(not isinstance(clb, CallBack) for clb in callbacks):
-        raise ValueError('callbacks should be of callbacks.CallBack type.')
+    if callbacks is not None:
+        if any(not isinstance(clb, CallBack) for clb in callbacks):
+            raise ValueError('callbacks should be of callbacks.CallBack type.')
     return callbacks

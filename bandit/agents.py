@@ -86,6 +86,8 @@ class Agent(process.Process, ABC):
     def choose(self):
         if not self.stop and self.episode_closed:
             return self.choose_arm()
+        else:
+            raise MissingRewardException(self.episode)
 
     def reward(self, name: str, reward: Union[int, float] = 1):
         if self.is_choice_made:
