@@ -6,6 +6,7 @@ __all__ = [
     'SoftmaxBoltzmann',
     'ThompsonSampling',
     'UCB1',
+    'UCB2',
     'VDBE',
     'EXP3'
 ]
@@ -24,6 +25,32 @@ class MissingRewardException(Exception):
     def __init__(self, episode: int):
         self.message = F'round {episode} is not rewarded.'
         super().__init__(self.message)
+
+
+class SuccessiveSelector:
+
+    def __init__(self):
+        self.arm_name = None
+        self.n = 0
+
+    @property
+    def in_recursion(self):
+        if self.arm_name is not None and self.n > 0:
+            return True
+        else:
+            return False
+
+    def set_recursion(self, name, n):
+        self.arm_name = name
+        self.n = n
+
+    def step(self):
+        if self.in_recursion:
+            self.n -= 1
+            return self.arm_name
+        else:
+            self.n = 0
+            self.arm_name = None
 
 
 class Agent(process.Process, ABC):
@@ -309,6 +336,56 @@ class UCB1(Agent):
         self.arm(name).reward(reward)
 
 
+class UCB2(Agent):
+    name = 'upper-confidence-bound-2-bandit'
+
+    def __init__(self,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
+                 alpha: float = 0.1
+                 ):
+        super().__init__(episodes, reset_at_end, callbacks)
+        self.alpha = alpha
+        self._ss = SuccessiveSelector()
+
+    def _init_r(self):
+        if self.episode == 0:
+            for arm in self.active_arms:
+                setattr(arm, 'r', 0)
+
+    def calc_upper_bounds(self, arm):
+        if arm.selections == 0:
+            return 1e500
+        else:
+            tau = self.tau(arm.r)
+            return (arm.mean_reward + (
+                math.sqrt((1 + self.alpha) * math.log(math.e * self.episode / tau) / 2 * tau)
+            )
+                    )
+
+    def calc_n_recursion(self, r):
+        return self.tau(r+1) - self.tau(r)
+
+    def tau(self, r):
+        return math.ceil((1 + self.alpha) ** r)
+
+    def choose_arm(self):
+        self._init_r()
+        if self._ss.in_recursion:
+            chosen_arm_name = self._ss.step()
+            chosen_arm = self.arm(chosen_arm_name)
+        else:
+            chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
+            self._ss.set_recursion(chosen_arm.name, self.calc_n_recursion(chosen_arm.r))
+            chosen_arm.r += 1
+        chosen_arm.select()
+        return chosen_arm.name
+
+    def reward_arm(self, name: str, reward):
+        self.arm(name).reward(reward)
+
+
 class VDBE(Agent):
     name = 'epsilon-greedy-vdbe-bandit'
 
@@ -367,7 +444,7 @@ class EXP3(Agent):
         super().__init__(episodes, reset_at_end, callbacks)
         self.gamma = gamma
 
-    def init_weights(self):
+    def _init_weights(self):
         if self.episode == 0:
             for arm in self.active_arms:
                 setattr(arm, 'weight', 1)
@@ -383,7 +460,7 @@ class EXP3(Agent):
         return sum([arm.weight for arm in self.active_arms])
 
     def choose_arm(self):
-        self.init_weights()
+        self._init_weights()
         w_dist = [self._arm_weight(arm) for arm in self.active_arms]
         chosen_arm = np.random.choice(self.active_arms, p=w_dist)
         chosen_arm.select()

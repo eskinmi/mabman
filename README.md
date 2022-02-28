@@ -2,6 +2,7 @@
 
 This library is set to serve various implementations of multi armed bandit theory. Current implementations include:
 * `UCB1`
+* `UCB2`
 * `Hedge`
 * `EpsilonGreedy`
 * `EpsilonDecay`
