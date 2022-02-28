@@ -475,7 +475,7 @@ class FPL(Agent):
                  episodes: int = 100,
                  reset_at_end: bool = False,
                  callbacks: Optional[list] = None,
-                 noise_param: float = 0.1
+                 noise_param: float = 5
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.noise_param = noise_param
@@ -484,7 +484,7 @@ class FPL(Agent):
         return float(np.random.exponential(self.noise_param))
 
     def choose_arm(self):
-        chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward + self._noise())
+        chosen_arm = max(self.active_arms, key=lambda x: x.rewards + self._noise())
         chosen_arm.select()
         return chosen_arm.name
 
