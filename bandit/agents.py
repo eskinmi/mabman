@@ -20,38 +20,13 @@ from abc import ABC, abstractmethod
 from bandit import process
 from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
 from bandit.callbacks import WrongBanditCheckPointError, CheckPointState
+from bandit.util import SuccessiveSelector
 
 
 class MissingRewardException(Exception):
     def __init__(self, episode: int):
         self.message = F'round {episode} is not rewarded.'
         super().__init__(self.message)
-
-
-class SuccessiveSelector:
-
-    def __init__(self):
-        self.arm_name = None
-        self.n = 0
-
-    @property
-    def in_recurrence(self):
-        if self.arm_name is not None and self.n > 0:
-            return True
-        else:
-            return False
-
-    def set_recurrence(self, name, n):
-        self.arm_name = name
-        self.n = n
-
-    def step(self):
-        if self.in_recurrence:
-            self.n -= 1
-            return self.arm_name
-        else:
-            self.n = 0
-            self.arm_name = None
 
 
 class Agent(process.Process, ABC):
