@@ -36,9 +36,9 @@ class Agent(process.Process, ABC):
                  reset_at_end: bool = False,
                  callbacks: Optional[list] = None,
                  ):
-        super().__init__(episodes, reset_at_end, callbacks)
         self.arms = []
         self.init_arm_vars = dict()
+        super().__init__(episodes, reset_at_end, callbacks)
 
     @property
     @abstractmethod
@@ -84,11 +84,31 @@ class Agent(process.Process, ABC):
     def episode_closed(self):
         return self.total_selections == self.episode
 
-    def set_init_arm_attrs(self, **kwargs):
+    def _set_init_arm_attrs(self, **kwargs):
         self.init_arm_vars = kwargs
 
     def _update_attrs(self,  params: dict):
         self.__dict__.update(params)
+
+    def add_arm(self, arm: Arm, overwrite: bool = False):
+        if arm.name not in self.arm_names or overwrite:
+            if overwrite:
+                self.arms = list(filter(lambda x: x.name != arm.name, self.arms))
+            [setattr(arm, k, v) for k, v in self.init_arm_vars.items()]
+            self.arms.append(arm)
+        else:
+            raise ArmAlreadyExistsException(arm.name)
+
+    def reset_arms(self):
+        args = [(a.name, a.p) for a in self.arms]
+        for arm_ags in args:
+            self.add_arm(
+                arm=Arm(arm_ags[0], arm_ags[1]),
+                overwrite=True
+                         )
+
+    def deactivate_arm(self, name: str):
+        self.arm(name).active = False
 
     def choose(self):
         if not self.stop and self.episode_closed:
@@ -109,16 +129,6 @@ class Agent(process.Process, ABC):
             return self.arms[self.arm_names.index(name)]
         else:
             raise ArmNotFoundException(name)
-
-    def add_arm(self, arm: Arm):
-        if arm.name not in self.arm_names:
-            [setattr(arm, k, v) for k, v in self.init_arm_vars.items()]
-            self.arms.append(arm)
-        else:
-            raise ArmAlreadyExistsException(arm.name)
-
-    def deactivate_arm(self, name: str):
-        self.arm(name).active = False
 
     def overlay_weights(self, path):
         ckp = CheckPointState(path)
@@ -328,7 +338,7 @@ class UCB2(Agent):
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.alpha = alpha
-        self.set_init_arm_attrs(r=0)
+        self._set_init_arm_attrs(r=0)
         self._ss = SuccessiveSelector()
 
     def calc_upper_bounds(self, arm):
@@ -419,7 +429,7 @@ class EXP3(Agent):
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.gamma = gamma
-        self.set_init_arm_attrs(weight=1)
+        self._set_init_arm_attrs(weight=1)
 
     def _update_arm_weight(self, arm, reward):
         estimate = reward / self._arm_proba(arm)
