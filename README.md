@@ -17,6 +17,7 @@ Current agent implementations include:
 * `ThompsonSampling`
 * `EXP3`
 * `FPL`
+* `LinUCB`
 
 ##  usage
 
@@ -45,7 +46,7 @@ agent.reward(name, reward=r)
 ## simulation
 
 ```python
-from bandit.agents.bayesian import EXP3
+from bandit.agents.adversarial import EXP3
 from bandit.arms import Arm
 
 agent = EXP3(100, False)
