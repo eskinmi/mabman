@@ -5,7 +5,7 @@ import os
 def arm_components(arms):
     """
     Get arm weights as list of dicts.
-    :param arms: List[Arm]
+    param arms: List[Arm]
     :return:
         List[Dict]
     """

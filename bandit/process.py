@@ -8,7 +8,7 @@ class Experiment:
         self.episodes = episodes
         self.episode = 0
         self.experiment_id = 0
-        self.hist = {'actions': [], 'rewards': []}
+        self.hist = {}
 
     def next_episode(self):
         self.episode += 1

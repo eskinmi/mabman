@@ -3,7 +3,7 @@ from .context import bandit
 import random
 
 
-class TestAgent(bandit.agents.Agent):
+class TestAgent(bandit.agents.base.Agent):
     name = 'test-bandit'
 
     def __init__(self,
@@ -48,7 +48,7 @@ def test_reward(base_agent):
     name = base_agent.choose()
     base_agent.reward(name, 1)
     assert base_agent.arm(name).rewards == 1
-    with pytest.raises(bandit.agents.MissingRewardException):
+    with pytest.raises(bandit.agents.base.MissingRewardException):
         base_agent.reward(name, 1)
 
 

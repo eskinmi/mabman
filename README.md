@@ -19,8 +19,9 @@ Current agent implementations include:
 * `FPL`
 
 ##  usage
+
 ```python
-from bandit.agents import VDBE
+from bandit.agents.bayesian import VDBE
 from bandit.arms import Arm
 from bandit.callbacks import HistoryLogger, CheckPoint
 
@@ -38,13 +39,15 @@ agent.add_arm(Arm('e'))
 
 # process
 name = agent.choose()
-r = 1 # collect reward for arm here  
+r = 1  # collect reward for arm here  
 agent.reward(name, reward=r)
 ```
 ## simulation
+
 ```python
-from bandit.agents import EXP3
+from bandit.agents.bayesian import EXP3
 from bandit.arms import Arm
+
 agent = EXP3(100, False)
 
 agent.add_arm(Arm('a', p=0.6))

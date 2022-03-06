@@ -7,141 +7,15 @@ __all__ = [
     'ThompsonSampling',
     'UCB1',
     'UCB2',
-    'VDBE',
-    'EXP3',
-    'FPL'
+    'VDBE'
 ]
 
 import random
 import math
 import numpy as np
-from typing import Union, Optional
-from abc import ABC, abstractmethod
-from bandit import process
-from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
-from bandit.callbacks import WrongBanditCheckPointError, CheckPointState
 from bandit.util import SuccessiveSelector
-
-
-class MissingRewardException(Exception):
-    def __init__(self, episode: int):
-        self.message = F'round {episode} is not rewarded.'
-        super().__init__(self.message)
-
-
-class Agent(process.Process, ABC):
-
-    def __init__(self,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 ):
-        self.arms = []
-        self.init_arm_vars = dict()
-        super().__init__(episodes, reset_at_end, callbacks)
-
-    @property
-    @abstractmethod
-    def name(self):
-        pass
-
-    @abstractmethod
-    def choose_arm(self):
-        pass
-
-    @abstractmethod
-    def reward_arm(self, name: str, reward: Union[int, float]):
-        pass
-
-    @property
-    def active_arms(self):
-        return list(filter(lambda x: x.active, self.arms))
-
-    @property
-    def agent_mean_reward(self):
-        if self.episode > 0:
-            return self.total_rewards / self.episode
-        else:
-            return 0
-
-    @property
-    def total_rewards(self):
-        return sum([arm.rewards for arm in self.arms])
-
-    @property
-    def total_selections(self):
-        return sum([arm.selections for arm in self.arms])
-
-    @property
-    def arm_names(self):
-        return [arm.name for arm in self.arms]
-
-    @property
-    def is_choice_made(self):
-        return self.total_selections == self.episode + 1
-
-    @property
-    def episode_closed(self):
-        return self.total_selections == self.episode
-
-    def _set_init_arm_attrs(self, **kwargs):
-        self.init_arm_vars = kwargs
-
-    def _update_attrs(self,  params: dict):
-        self.__dict__.update(params)
-
-    def add_arm(self, arm: Arm, overwrite: bool = False):
-        if arm.name not in self.arm_names or overwrite:
-            if overwrite:
-                self.arms = list(filter(lambda x: x.name != arm.name, self.arms))
-            [setattr(arm, k, v) for k, v in self.init_arm_vars.items()]
-            self.arms.append(arm)
-        else:
-            raise ArmAlreadyExistsException(arm.name)
-
-    def reset_arms(self):
-        args = [(a.name, a.p) for a in self.arms]
-        for arm_ags in args:
-            self.add_arm(
-                arm=Arm(arm_ags[0], arm_ags[1]),
-                overwrite=True
-                         )
-
-    def deactivate_arm(self, name: str):
-        self.arm(name).active = False
-
-    def choose(self):
-        if not self.stop and self.episode_closed:
-            return self.choose_arm()
-        else:
-            raise MissingRewardException(self.episode)
-
-    def reward(self, name: str, reward: Union[int, float] = 1):
-        if self.is_choice_made:
-            self.reward_arm(name, reward)
-            self.add_episode_logs(name, reward, self.arm_names)
-            self.proceed()
-        else:
-            raise MissingRewardException(self.episode)
-
-    def arm(self, name: str):
-        if name in self.arm_names:
-            return self.arms[self.arm_names.index(name)]
-        else:
-            raise ArmNotFoundException(name)
-
-    def overlay_weights(self, path):
-        ckp = CheckPointState(path)
-        arms_weights, exp_params, agent_params = ckp.load_component_weights()
-        if self.name == agent_params['name']:
-            self.arms = [
-                Arm.build(arm_weights['name'], arm_weights['weights'])
-                for arm_weights in arms_weights
-            ]
-            self.experiment = process.Experiment.build(exp_params)
-            self._update_attrs(agent_params['params'])
-        else:
-            raise WrongBanditCheckPointError(agent_params['name'])
+from bandit.agents.base import Agent
+from typing import Optional, Union
 
 
 class EpsilonGreedy(Agent):
@@ -415,63 +289,4 @@ class VDBE(Agent):
     def reward_arm(self, name: str, reward):
         self._prev_epsilon = self.epsilon
         self._previous_mean_reward = self.agent_mean_reward
-        self.arm(name).reward(reward)
-
-
-class EXP3(Agent):
-    name = 'exponential-weight-bandit'
-
-    def __init__(self,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 gamma: float = 0.1
-                 ):
-        super().__init__(episodes, reset_at_end, callbacks)
-        self.gamma = gamma
-        self._set_init_arm_attrs(weight=1)
-
-    def _update_arm_weight(self, arm, reward):
-        estimate = reward / self._arm_proba(arm)
-        arm.weight *= math.exp(estimate * self.gamma / len(self.active_arms))
-
-    def _arm_proba(self, arm):
-        return (1.0 - self.gamma) * (arm.weight / self._w_sum()) + (self.gamma / len(self.active_arms))
-
-    def _w_sum(self):
-        return sum([arm.weight for arm in self.active_arms])
-
-    def choose_arm(self):
-        w_dist = [self._arm_proba(arm) for arm in self.active_arms]
-        chosen_arm = np.random.choice(self.active_arms, p=w_dist)
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_arm(self, name: str, reward):
-        arm = self.arm(name)
-        self._update_arm_weight(arm, reward)
-        arm.reward(reward)
-
-
-class FPL(Agent):
-    name = 'follow-perturbed-leader-bandit'
-
-    def __init__(self,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 noise_param: float = 5
-                 ):
-        super().__init__(episodes, reset_at_end, callbacks)
-        self.noise_param = noise_param
-
-    def _noise(self):
-        return float(np.random.exponential(self.noise_param))
-
-    def choose_arm(self):
-        chosen_arm = max(self.active_arms, key=lambda x: x.rewards + self._noise())
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_arm(self, name: str, reward):
         self.arm(name).reward(reward)
