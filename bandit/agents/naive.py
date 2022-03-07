@@ -189,7 +189,7 @@ class UCB1(Agent):
             return 1e500
         else:
             return arm.mean_reward + (
-                    self.confidence * math.sqrt(math.log(self.episode + 1) / arm.selections)
+                math.sqrt(self.confidence * math.log(self.episode + 1) / arm.selections)
             )
 
     def choose_arm(self):
@@ -199,6 +199,45 @@ class UCB1(Agent):
 
     def reward_arm(self, name: str, reward):
         self.arm(name).reward(reward)
+
+
+class UCB1Tuned(Agent):
+    name = 'upper-confidence-bound-1-bandit'
+
+    def __init__(self,
+                 episodes: int = 100,
+                 reset_at_end: bool = False,
+                 callbacks: Optional[list] = None,
+                 confidence: Union[int, float] = 2
+                 ):
+        super().__init__(episodes, reset_at_end, callbacks)
+        self._set_init_arm_attrs(rewards_sq=0)
+        self.confidence = confidence
+
+    def arm_variance_ub(self, arm):
+        return (
+            arm.rewards_sq / arm.selections - arm.mean_rewards ** 2 +
+            math.sqrt(self.confidence * math.log(self.episode + 1) / arm.selections)
+        )
+
+    def calc_upper_bounds(self, arm):
+        if arm.selections == 0:
+            return 1e500
+        else:
+            return arm.mean_reward + (
+                math.sqrt(math.log(self.episode + 1 / arm.selections) * min(0.25, self.arm_variance_ub(arm)))
+            )
+
+    def choose_arm(self):
+        chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
+        chosen_arm.select()
+        return chosen_arm.name
+
+    def reward_arm(self, name: str, reward):
+        arm = self.arm(name)
+        arm.reward(reward)
+        arm.rewards_sq += reward ** 2
+
 
 
 class UCB2(Agent):

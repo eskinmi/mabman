@@ -22,7 +22,7 @@ Current agent implementations include:
 ##  usage
 
 ```python
-from bandit.agents.bayesian import VDBE
+from bandit.agents.naive import VDBE
 from bandit.arms import Arm
 from bandit.callbacks import HistoryLogger, CheckPoint
 

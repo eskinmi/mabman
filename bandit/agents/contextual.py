@@ -19,19 +19,22 @@ class LinUCB(Agent):
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
         self.alpha = alpha
-        self._set_init_arm_attrs(A=np.identity(d), b=np.zeros([d, 1]))
-        self.x = None
+        self.d = d
+        self.ctx = None
+        self._set_init_arm_attrs(A=np.identity(d),
+                                 b=np.zeros([d, 1])
+                                 )
 
-    def _set_context(self, x: np.array):
+    def _set_context(self, context: np.array):
         if self.episode_closed:
-            self.x = x.reshape([-1, 1])
+            self.ctx = context.reshape([-1, 1])
         else:
             raise MissingRewardException(self.episode)
 
     def calc_upper_bounds(self, arm):
         a_inv = np.linalg.inv(arm.A)
         theta = np.dot(a_inv, arm.b)
-        ucb = np.dot(theta.T, self.x) + self.alpha * np.sqrt(np.dot(self.x.T, np.dot(a_inv, self.x)))
+        ucb = np.dot(theta.T, self.ctx) + self.alpha * np.sqrt(np.dot(self.ctx.T, np.dot(a_inv, self.ctx)))
         return ucb
 
     def choose_arm(self, context):
@@ -43,5 +46,6 @@ class LinUCB(Agent):
     def reward_arm(self, name: str, reward: Union[int, float]):
         arm = self.arm(name)
         arm.reward(reward)
-        arm.A += np.dot(self.x, self.x.T)
-        arm.b += reward*self.x
+        arm.A += np.dot(self.ctx, self.ctx.T)
+        arm.b += reward*self.ctx
+        self.ctx = None  # reset context
