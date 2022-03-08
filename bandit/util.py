@@ -24,7 +24,7 @@ def experiment_params(experiment):
 def agent_params(agent):
     return {'name': agent.__class__.name,
             'params': {k: v for k, v in agent.__dict__.items()
-                       if k not in ['callbacks', 'arms', 'experiment']
+                       if k not in ['callbacks', 'arms', 'experiment', 'env']
                        and not k.startswith('_')
                        }
             }

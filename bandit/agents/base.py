@@ -1,6 +1,10 @@
-from typing import Union, Optional
+from typing import Union, Optional, List
 from abc import ABC, abstractmethod
+
+import numpy as np
+
 from bandit import process
+from bandit.states import EnvStates
 from bandit.arms import Arm, ArmNotFoundException, ArmAlreadyExistsException
 from bandit.callbacks import WrongBanditCheckPointError, CheckPointState
 
@@ -19,7 +23,9 @@ class Agent(process.Process, ABC):
                  callbacks: Optional[list] = None,
                  ):
         self.arms = []
+        self.in_context = None
         self.init_arm_vars = dict()
+        self.env = EnvStates()
         super().__init__(episodes, reset_at_end, callbacks)
 
     @property
@@ -28,7 +34,7 @@ class Agent(process.Process, ABC):
         pass
 
     @abstractmethod
-    def choose_arm(self, **kwargs):
+    def choose_arm(self, context=None):
         pass
 
     @abstractmethod
@@ -92,16 +98,16 @@ class Agent(process.Process, ABC):
     def deactivate_arm(self, name: str):
         self.arm(name).active = False
 
-    def choose(self):
+    def choose(self, context: Union[List, np.ndarray] = None):
         if not self.stop and self.episode_closed:
-            return self.choose_arm()
+            return self.choose_arm(context)
         else:
             raise MissingRewardException(self.episode)
 
     def reward(self, name: str, reward: Union[int, float] = 1):
         if self.is_choice_made:
             self.reward_arm(name, reward)
-            self.add_episode_logs(name, reward, self.arm_names)
+            self.add_episode_logs(name, reward)
             self.proceed()
         else:
             raise MissingRewardException(self.episode)

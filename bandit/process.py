@@ -1,5 +1,6 @@
 from bandit.callbacks import apply_callbacks, _set_callbacks_list
 from abc import abstractmethod
+from typing import Union
 
 
 class Experiment:
@@ -8,14 +9,13 @@ class Experiment:
         self.episodes = episodes
         self.episode = 0
         self.experiment_id = 0
-        self.hist = {}
+        self.hist = []
 
     def next_episode(self):
         self.episode += 1
 
-    def log(self, actions, rewards):
-        self.hist['actions'].append(actions)
-        self.hist['rewards'].append(rewards)
+    def log(self, name: str, reward: Union[float, int]):
+        self.hist.append([name, reward])
 
     @property
     def is_completed(self):
@@ -78,8 +78,5 @@ class Process:
         else:
             self.experiment.next_episode()
 
-    def add_episode_logs(self, name, reward, names):
-        # log here only the name of selected arm, not in array
-        actions = [0] * len(names)
-        actions[names.index(name)] = 1
-        self.experiment.log(actions, reward)
+    def add_episode_logs(self, name, reward):
+        self.experiment.log(name, reward)
