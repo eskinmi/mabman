@@ -38,7 +38,7 @@ def test_arm_draw(bernoulli_arm):
 
 def test_arm_build(arm_weights):
     arm = bandit.arms.Arm.build('x', arm_weights)
-    assert arm.p == 0.3
+    assert arm.proba == 0.3
     assert arm.selections == 10
     assert arm.rewards == 5
     assert arm.mean_reward == 0.0

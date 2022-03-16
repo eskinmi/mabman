@@ -30,7 +30,7 @@ callbacks = [
     HistoryLogger(),
     CheckPoint(in_every=50)
 ]
-agent = VDBE(100, False, sigma=.5, init_epsilon=0.3, callbacks=callbacks)
+agent = VDBE([], 100, False, sigma=.5, init_epsilon=0.3, callbacks=callbacks)
 
 agent.add_arm(Arm('a'))
 agent.add_arm(Arm('b'))
@@ -49,12 +49,7 @@ agent.reward(name, reward=r)
 from bandit.agents.adversarial import EXP3
 from bandit.arms import Arm
 
-agent = EXP3(100, False)
-
-agent.add_arm(Arm('a', p=0.6))
-agent.add_arm(Arm('b', p=0.3))
-agent.add_arm(Arm('c', p=0.4))
-
+agent = EXP3(arms=[Arm('a', p=0.6), Arm('b', p=0.3), Arm('c', p=0.4)], episodes=1000,)
 while not agent.stop:
     if name := agent.choose():
         r = agent.arm(name).draw()

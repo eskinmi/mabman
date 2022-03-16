@@ -1,5 +1,13 @@
 import json
 import os
+import numpy as np
+
+
+def _json_type_conversions(v):
+    if isinstance(v, np.ndarray):
+        return v.tolist()
+    else:
+        return v
 
 
 def arm_components(arms):
@@ -11,26 +19,26 @@ def arm_components(arms):
     """
     return [
         {'name': arm.name,
-         'weights': {k: v for k, v in arm.__dict__.items() if k != 'name'}
+         'weights': {k: _json_type_conversions(v) for k, v in arm.__dict__.items() if k != 'name'}
          }
         for arm in arms
     ]
 
 
 def experiment_params(experiment):
-    return experiment.__dict__
+    return {k: _json_type_conversions(v) for k, v in experiment.__dict__.items()}
 
 
 def agent_params(agent):
     return {'name': agent.__class__.name,
-            'params': {k: v for k, v in agent.__dict__.items()
+            'params': {k: _json_type_conversions(v) for k, v in agent.__dict__.items()
                        if k not in ['callbacks', 'arms', 'experiment', 'env']
                        and not k.startswith('_')
                        }
             }
 
 
-def agent_component_parts(agent):
+def agent_component_weights(agent):
     """
     Divides to agent / process into three
     functional parts:
@@ -39,11 +47,11 @@ def agent_component_parts(agent):
     :return:
         Tuple(List[Arm], Experiment, Dict)
     """
-    return (
-        arm_components(agent.__dict__.get('arms', [])),
-        experiment_params(agent.__dict__.get('experiment', None)),
-        agent_params(agent)
-    )
+    return {
+        'arm': arm_components(agent.__dict__.get('arms', [])),
+        'experiment': experiment_params(agent.__dict__.get('experiment', None)),
+        'agent': agent_params(agent)
+    }
 
 
 def save_json(path, data):

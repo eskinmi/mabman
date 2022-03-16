@@ -13,12 +13,12 @@ class TestAgent(bandit.agents.base.Agent):
                  ):
         super().__init__(episodes, reset_at_end, callbacks)
 
-    def choose_arm(self, context=None):
+    def selection_policy(self, context=None):
         chosen_arm = random.choice(self.active_arms)
         chosen_arm.select()
         return chosen_arm.name
 
-    def reward_arm(self, name, reward, context=None):
+    def reward_policy(self, name, reward, context=None):
         self.arm(name).reward(reward)
 
 

@@ -1,6 +1,6 @@
 from bandit.callbacks import apply_callbacks, _set_callbacks_list
 from abc import abstractmethod
-from typing import Union
+import itertools
 
 
 class Experiment:
@@ -11,15 +11,24 @@ class Experiment:
         self.experiment_id = 0
         self.hist = []
 
-    def next_episode(self):
-        self.episode += 1
-
-    def log(self, name: str, reward: Union[float, int]):
-        self.hist.append([name, reward])
-
     @property
     def is_completed(self):
         return self.episodes == self.episode + 1
+
+    def summarize(self):
+        arm_metrics = {}
+        for i, g in itertools.groupby(sorted(self.hist), key=lambda x: x[0]):
+            arm_metrics[i] = {}
+            arm_metrics[i]['selections'] = (selections := sum(1 for _ in g))
+            arm_metrics[i]['rewards'] = (rewards := sum(arr[1] for arr in g))
+            arm_metrics[i]['mean_rewards'] = (rewards / selections if selections > 0 else 0)
+        return arm_metrics
+
+    def next_episode(self):
+        self.episode += 1
+
+    def log(self, **kwargs):
+        self.hist.append(kwargs)
 
     def __repr__(self):
         return F'Experiment({self.experiment_id})'
@@ -77,6 +86,3 @@ class Process:
                 self.stop = True
         else:
             self.experiment.next_episode()
-
-    def add_episode_logs(self, name, reward):
-        self.experiment.log(name, reward)

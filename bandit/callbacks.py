@@ -30,16 +30,10 @@ class CheckPointState:
         util.mkdirs(self.path)
 
     def save_component_weights(self, process):
-        arm_weights, experiment_params, agent_params = util.agent_component_parts(process)
-        util.save_json(self.path + '/agent_params', agent_params)
-        util.save_json(self.path + '/experiment_params', experiment_params)
-        util.save_json(self.path + '/arm_weights', arm_weights)
+        util.save_json(self.path + '/weights.ckp', util.agent_component_weights(process))
 
     def load_component_weights(self):
-        arm_weights = util.read_json(self.path + '/arm_weights')
-        experiment_params = util.read_json(self.path + '/experiment_params')
-        agent_params = util.read_json(self.path + '/agent_params')
-        return arm_weights, experiment_params, agent_params
+        return util.read_json(self.path + '/weights.ckp')
 
 
 class CheckPoint(CallBack):
@@ -48,6 +42,7 @@ class CheckPoint(CallBack):
         super().__init__()
         self.ckp = CheckPointState(path)
         self.in_every = in_every
+        raise NotImplementedError()
 
     def call(self, process):
         if process.experiment.episode != 0 and\

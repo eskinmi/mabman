@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class EnvStates:
+class StatesSecretary:
 
     def __init__(self):
         self.past_states = []
@@ -11,17 +11,17 @@ class EnvStates:
     def state(self):
         return self._state
 
-    @property
-    def last_state(self):
-        if self.past_states:
-            return self.past_states[-1]
-
     @state.setter
     def state(self, state):
         if state is not None:
             self._state = np.reshape(state, (-1, 1))
         else:
             self._state = None
+
+    @property
+    def last_state(self):
+        if self.past_states:
+            return self.past_states[-1]
 
     def instate(self, state):
         self.state = state
