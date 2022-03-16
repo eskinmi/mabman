@@ -5,7 +5,7 @@ __all__ = [
 import numpy as np
 from bandit.agents.base import Agent
 from bandit.arms import Arm
-from bandit.states import StatesSecretary
+from bandit.utils.states import StatesSecretary
 from typing import Optional, Union, List
 
 
@@ -26,12 +26,24 @@ class LinUCB(Agent):
         self.alpha = alpha
         self.d = d
 
-    def arm_upper_bound(self, arm, context):
+    def arm_upper_bound(self, arm: Arm, context: np.ndarray) -> float:
+        """
+        Find arm UCB (upper confidence bound).
+
+        Parameters
+        ----------
+        arm : Arm
+        context : context array
+
+        Returns
+        -------
+        UCB (float)
+        """
         a_inv = np.linalg.inv(arm.A)
         theta = np.dot(a_inv, arm.b)
         return np.dot(theta.T, context) + self.alpha * np.sqrt(np.dot(context.T, np.dot(a_inv, context)))
 
-    def selection_policy(self, context):
+    def selection_policy(self, context: np.ndarray) -> str:
         with self.statesman.instate(context) as c:
             chosen_arm = max(self.active_arms, key=lambda x: self.arm_upper_bound(x, c))
             chosen_arm.select()

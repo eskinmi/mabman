@@ -13,9 +13,10 @@ __all__ = [
 import random
 import math
 import numpy as np
-from bandit.util import SuccessiveSelector
+from bandit.utils.policy import SuccessiveSelector
 from bandit.agents.base import Agent
 from bandit.arms import Arm
+from bandit.utils.policy import ucb
 from typing import Optional, Union, List
 
 
@@ -32,7 +33,7 @@ class EpsilonGreedy(Agent):
         super().__init__(arms, episodes, reset_at_end, callbacks)
         self.epsilon = epsilon
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         if random.random() > self.epsilon:
             chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         else:
@@ -59,7 +60,7 @@ class EpsilonDecay(Agent):
         self.epsilon = epsilon
         self.gamma = gamma
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         if random.random() > self.epsilon * (1 - self.gamma)**self.episode:
             chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         else:
@@ -85,7 +86,7 @@ class EpsilonFirst(Agent):
         self.epsilon = epsilon
         self.start_exploration = self.episode * (1-self.epsilon) - 1
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         if self.episode >= self.start_exploration:
             chosen_arm = random.choice(self.active_arms)
         else:
@@ -109,10 +110,10 @@ class Hedge(Agent):
         super().__init__(arms, episodes, reset_at_end, callbacks)
         self.temperature = temperature
 
-    def _threshold(self):
+    def _threshold(self) -> float:
         return sum([math.exp(arm.rewards / self.temperature) for arm in self.active_arms])
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         th = self._threshold()
         z = random.random()
         chosen_arm = self.active_arms[-1]  # default
@@ -142,7 +143,7 @@ class SoftmaxBoltzmann(Agent):
         super().__init__(arms, episodes, reset_at_end, callbacks)
         self.temp = temperature
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         denominator = sum([math.exp(a.mean_reward / self.temp) for a in self.active_arms])
         probabilities = [math.exp(arm.mean_reward / self.temp) / denominator for arm in self.active_arms]
         chosen_arm = np.random.choice(self.active_arms, p=probabilities)
@@ -164,12 +165,12 @@ class ThompsonSampling(Agent):
                  ):
         super().__init__(arms, episodes, reset_at_end, callbacks)
 
-    def mk_draws(self):
+    def mk_draws(self) -> List[float]:
         return [np.random.beta(arm.rewards + 1, arm.selections - arm.rewards + 1, size=1)
                 for arm in self.active_arms
                 ]
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         draws = self.mk_draws()
         chosen_arm = self.active_arms[draws.index(max(draws))]
         chosen_arm.select()
@@ -192,16 +193,8 @@ class UCB1(Agent):
         super().__init__(arms, episodes, reset_at_end, callbacks)
         self.confidence = confidence
 
-    def calc_upper_bounds(self, arm):
-        if arm.selections == 0:
-            return 1e500
-        else:
-            return arm.mean_reward + (
-                math.sqrt(self.confidence * math.log(self.episode + 1) / arm.selections)
-            )
-
-    def selection_policy(self):
-        chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
+    def selection_policy(self) -> str:
+        chosen_arm = max(self.active_arms, key=lambda x: ucb(x, self.episode, self.confidence))
         chosen_arm.select()
         return chosen_arm.name
 
@@ -223,21 +216,21 @@ class UCB1Tuned(Agent):
         self.confidence = confidence
         super().__init__(arms, episodes, reset_at_end, callbacks)
 
-    def arm_variance_ub(self, arm):
+    def arm_variance_ub(self, arm) -> float:
         return (
             arm.rewards_sq / arm.selections - arm.mean_rewards ** 2 +
             math.sqrt(self.confidence * math.log(self.episode + 1) / arm.selections)
         )
 
-    def calc_upper_bounds(self, arm):
+    def calc_upper_bounds(self, arm) -> float:
         if arm.selections == 0:
             return 1e500
         else:
             return arm.mean_reward + (
-                math.sqrt(math.log(self.episode + 1 / arm.selections) * min(0.25, self.arm_variance_ub(arm)))
+                math.sqrt(min(0.25, self.arm_variance_ub(arm)) * math.log(self.episode + 1 / arm.selections))
             )
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
         chosen_arm.select()
         return chosen_arm.name
@@ -263,7 +256,7 @@ class UCB2(Agent):
         self._ss = SuccessiveSelector()
         super().__init__(arms, episodes, reset_at_end, callbacks)
 
-    def calc_upper_bounds(self, arm):
+    def calc_upper_bounds(self, arm) -> float:
         if arm.selections == 0:
             return 1e500
         else:
@@ -273,13 +266,13 @@ class UCB2(Agent):
             )
                     )
 
-    def calc_n_recursion(self, r):
+    def calc_n_recursion(self, r) -> int:
         return self.tau(r+1) - self.tau(r)
 
-    def tau(self, r):
+    def tau(self, r) -> int:
         return math.ceil((1 + self.alpha) ** r)
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         if self._ss.in_recurrence:
             chosen_arm_name = self._ss.step()
             chosen_arm = self.arm(chosen_arm_name)
@@ -312,22 +305,22 @@ class VDBE(Agent):
         self._previous_mean_reward = self.agent_mean_reward
 
     @property
-    def delta(self):
+    def delta(self) -> float:
         if self.episode != 0:
             return 1 / self.episode
         else:
-            return 1
+            return 1.0
 
     @property
-    def action_value(self):
+    def action_value(self) -> float:
         prior = 1 - math.exp(-1 * abs(self.agent_mean_reward - self._previous_mean_reward) / self.sigma)
         return (1 - prior) / (1 + prior)
 
     @property
-    def epsilon(self):
+    def epsilon(self) -> float:
         return self.delta * self.action_value + (1 - self.delta) * self._prev_epsilon
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         if random.random() > self.epsilon:
             chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
         else:

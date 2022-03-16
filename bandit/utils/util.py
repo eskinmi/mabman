@@ -70,28 +70,3 @@ def mkdirs(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-
-class SuccessiveSelector:
-
-    def __init__(self):
-        self.arm_name = None
-        self.n = 0
-
-    @property
-    def in_recurrence(self):
-        if self.arm_name is not None and self.n > 0:
-            return True
-        else:
-            return False
-
-    def set_recurrence(self, name, n):
-        self.arm_name = name
-        self.n = n
-
-    def step(self):
-        if self.in_recurrence:
-            self.n -= 1
-            return self.arm_name
-        else:
-            self.n = 0
-            self.arm_name = None

@@ -24,17 +24,44 @@ class EXP3(Agent):
         super().__init__(arms, episodes, reset_at_end, callbacks)
         self.gamma = gamma
 
-    def _update_arm_weight(self, arm, reward):
+    def _update_arm_weight(self, arm: Arm , reward: int):
+        """
+        update arm weights with the given reward.
+        Parameters
+        ----------
+        arm: Arm
+        reward: reward
+
+        Returns
+        -------
+        None
+        """
         estimate = reward / self._arm_proba(arm)
         arm.weight *= math.exp(estimate * self.gamma / len(self.active_arms))
 
-    def _arm_proba(self, arm):
+    def _arm_proba(self, arm: Arm) -> float:
+        """
+        Calculate arm selection probability.
+        Parameters
+        ----------
+        arm: Arm
+
+        Returns
+        -------
+        selection probability (float)
+        """
         return (1.0 - self.gamma) * (arm.weight / self._w_sum()) + (self.gamma / len(self.active_arms))
 
-    def _w_sum(self):
+    def _w_sum(self) -> float:
+        """
+        Sum of weights
+        Returns
+        -------
+        float
+        """
         return sum([arm.weight for arm in self.active_arms])
 
-    def selection_policy(self, context=None):
+    def selection_policy(self, context=None) -> str:
         w_dist = [self._arm_proba(arm) for arm in self.active_arms]
         chosen_arm = np.random.choice(self.active_arms, p=w_dist)
         chosen_arm.select()
@@ -59,10 +86,16 @@ class FPL(Agent):
         super().__init__(arms, episodes, reset_at_end, callbacks)
         self.noise_param = noise_param
 
-    def _noise(self):
+    def _noise(self) -> float:
+        """
+        get noise variable given the noise parameter.
+        Returns
+        -------
+        noise (float)
+        """
         return float(np.random.exponential(self.noise_param))
 
-    def selection_policy(self):
+    def selection_policy(self) -> str:
         chosen_arm = max(self.active_arms, key=lambda x: x.rewards + self._noise())
         chosen_arm.select()
         return chosen_arm.name

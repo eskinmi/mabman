@@ -1,4 +1,4 @@
-from bandit import util
+from bandit.utils import util
 from abc import ABC, abstractmethod
 from typing import List
 
