@@ -6,21 +6,27 @@ __all__ = [
     'SoftmaxBoltzmann',
     'ThompsonSampling',
     'UCB1',
-    'UCB2',
+    'UCB1Tuned',
     'VDBE'
 ]
 
 import random
 import math
 import numpy as np
-from bandit.utils.policy import SuccessiveSelector
+from typing import Optional, Union, List
+import logging
+from bandit.utils.policy import SuccessiveSelector, ucb
 from bandit.agents.base import Agent
 from bandit.arms import Arm
-from bandit.utils.policy import ucb
-from typing import Optional, Union, List
 
+logger = logging.getLogger(__name__)
 
 class EpsilonGreedy(Agent):
+    """Epsilon Greedy bandit algorithm implementation.
+    
+    Implements the epsilon-greedy strategy where the agent explores with 
+    probability epsilon and exploits with probability 1-epsilon.
+    """
     name = 'epsilon-greedy-bandit'
 
     def __init__(self,
@@ -31,21 +37,32 @@ class EpsilonGreedy(Agent):
                  epsilon: float = 0.1
                  ):
         super().__init__(arms, episodes, reset_at_end, callbacks)
+        if not 0 <= epsilon <= 1:
+            raise ValueError("Epsilon must be between 0 and 1")
         self.epsilon = epsilon
+        logger.info(f"Initialized {self.name} with epsilon={epsilon}")
 
     def selection_policy(self) -> str:
         if random.random() > self.epsilon:
             chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
+            logger.debug("Exploiting best arm")
         else:
             chosen_arm = random.choice(self.active_arms)
+            logger.debug("Exploring random arm")
         chosen_arm.select()
         return chosen_arm.name
 
     def reward_policy(self, name: str, reward: Union[int, float]):
         self.arm(name).reward(reward)
+        logger.debug(f"Arm {name} received reward {reward}")
 
 
 class EpsilonDecay(Agent):
+    """Epsilon Decreasing bandit algorithm implementation.
+    
+    Implements the epsilon-decreasing strategy where exploration probability
+    decreases over time.
+    """
     name = 'epsilon-decreasing-bandit'
 
     def __init__(self,
@@ -57,22 +74,36 @@ class EpsilonDecay(Agent):
                  gamma: float = 0.1,
                  ):
         super().__init__(arms, episodes, reset_at_end, callbacks)
+        if not 0 <= epsilon <= 1:
+            raise ValueError("Epsilon must be between 0 and 1")
+        if not 0 <= gamma <= 1:
+            raise ValueError("Gamma must be between 0 and 1")
         self.epsilon = epsilon
         self.gamma = gamma
+        logger.info(f"Initialized {self.name} with epsilon={epsilon}, gamma={gamma}")
 
     def selection_policy(self) -> str:
-        if random.random() > self.epsilon * (1 - self.gamma)**self.episode:
+        current_epsilon = self.epsilon * (1 - self.gamma)**self.episode
+        if random.random() > current_epsilon:
             chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
+            logger.debug("Exploiting best arm")
         else:
             chosen_arm = random.choice(self.active_arms)
+            logger.debug("Exploring random arm")
         chosen_arm.select()
         return chosen_arm.name
 
     def reward_policy(self, name: str, reward: Union[int, float]):
         self.arm(name).reward(reward)
+        logger.debug(f"Arm {name} received reward {reward}")
 
 
 class EpsilonFirst(Agent):
+    """Epsilon First bandit algorithm implementation.
+    
+    Implements the epsilon-first strategy where exploration happens first,
+    followed by exploitation.
+    """
     name = 'epsilon-first-bandit'
 
     def __init__(self,
@@ -83,127 +114,34 @@ class EpsilonFirst(Agent):
                  epsilon: float = 0.1,
                  ):
         super().__init__(arms, episodes, reset_at_end, callbacks)
+        if not 0 <= epsilon <= 1:
+            raise ValueError("Epsilon must be between 0 and 1")
         self.epsilon = epsilon
-        self.start_exploration = self.episode * (1-self.epsilon) - 1
+        self.start_exploration = int(self.episodes * (1-self.epsilon))
+        logger.info(f"Initialized {self.name} with epsilon={epsilon}")
 
     def selection_policy(self) -> str:
         if self.episode >= self.start_exploration:
-            chosen_arm = random.choice(self.active_arms)
-        else:
             chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
-        chosen_arm.select()
-
-    def reward_policy(self, name: str, reward: Union[int, float]):
-        self.arm(name).reward(reward)
-
-
-class Hedge(Agent):
-    name = 'hedge-bandit'
-
-    def __init__(self,
-                 arms: Optional[List[Arm]] = None,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 temperature: Union[int, float] = 2
-                 ):
-        super().__init__(arms, episodes, reset_at_end, callbacks)
-        self.temperature = temperature
-
-    def _threshold(self) -> float:
-        return sum([math.exp(arm.rewards / self.temperature) for arm in self.active_arms])
-
-    def selection_policy(self) -> str:
-        th = self._threshold()
-        z = random.random()
-        chosen_arm = self.active_arms[-1]  # default
-        p_sum = 0
-        for arm in self.active_arms:
-            p_sum += math.exp(arm.rewards / self.temperature) / th
-            if p_sum > z:
-                chosen_arm = arm
-                break
+            logger.debug("Exploiting best arm")
+        else:
+            chosen_arm = random.choice(self.active_arms)
+            logger.debug("Exploring random arm")
         chosen_arm.select()
         return chosen_arm.name
 
     def reward_policy(self, name: str, reward: Union[int, float]):
         self.arm(name).reward(reward)
-
-
-class SoftmaxBoltzmann(Agent):
-    name = 'softmax-boltzmann-bandit'
-
-    def __init__(self,
-                 arms: Optional[List[Arm]] = None,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 temperature: Union[int, float] = 2
-                 ):
-        super().__init__(arms, episodes, reset_at_end, callbacks)
-        self.temp = temperature
-
-    def selection_policy(self) -> str:
-        denominator = sum([math.exp(a.mean_reward / self.temp) for a in self.active_arms])
-        probabilities = [math.exp(arm.mean_reward / self.temp) / denominator for arm in self.active_arms]
-        chosen_arm = np.random.choice(self.active_arms, p=probabilities)
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_policy(self, name: str, reward: Union[int, float]):
-        self.arm(name).reward(reward)
-
-
-class ThompsonSampling(Agent):
-    name = 'thompson-sampling-bandit'
-
-    def __init__(self,
-                 arms: Optional[List[Arm]] = None,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 ):
-        super().__init__(arms, episodes, reset_at_end, callbacks)
-
-    def mk_draws(self) -> List[float]:
-        return [np.random.beta(arm.rewards + 1, arm.selections - arm.rewards + 1, size=1)
-                for arm in self.active_arms
-                ]
-
-    def selection_policy(self) -> str:
-        draws = self.mk_draws()
-        chosen_arm = self.active_arms[draws.index(max(draws))]
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_policy(self, name: str, reward: Union[int, float]):
-        self.arm(name).reward(reward)
-
-
-class UCB1(Agent):
-    name = 'upper-confidence-bound-1-bandit'
-
-    def __init__(self,
-                 arms: Optional[List[Arm]] = None,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 confidence: Union[int, float] = 2
-                 ):
-        super().__init__(arms, episodes, reset_at_end, callbacks)
-        self.confidence = confidence
-
-    def selection_policy(self) -> str:
-        chosen_arm = max(self.active_arms, key=lambda x: ucb(x, self.episode, self.confidence))
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_policy(self, name: str, reward: Union[int, float]):
-        self.arm(name).reward(reward)
+        logger.debug(f"Arm {name} received reward {reward}")
 
 
 class UCB1Tuned(Agent):
-    name = 'upper-confidence-bound-1-bandit'
+    """UCB1-Tuned bandit algorithm implementation.
+    
+    Implements the UCB1-Tuned algorithm which uses variance estimates
+    to improve exploration.
+    """
+    name = 'upper-confidence-bound-1-tuned-bandit'
 
     def __init__(self,
                  arms: Optional[List[Arm]] = None,
@@ -215,120 +153,32 @@ class UCB1Tuned(Agent):
         self._arm_vars_hook(rewards_sq=0)
         self.confidence = confidence
         super().__init__(arms, episodes, reset_at_end, callbacks)
+        logger.info(f"Initialized {self.name} with confidence={confidence}")
 
-    def arm_variance_ub(self, arm) -> float:
+    def arm_variance_ub(self, arm: Arm) -> float:
+        if arm.selections == 0:
+            return float('inf')
         return (
-            arm.rewards_sq / arm.selections - arm.mean_rewards ** 2 +
+            arm.rewards_sq / arm.selections - (arm.mean_reward ** 2) +
             math.sqrt(self.confidence * math.log(self.episode + 1) / arm.selections)
         )
 
-    def calc_upper_bounds(self, arm) -> float:
+    def calc_upper_bounds(self, arm: Arm) -> float:
         if arm.selections == 0:
-            return 1e500
-        else:
-            return arm.mean_reward + (
-                math.sqrt(min(0.25, self.arm_variance_ub(arm)) * math.log(self.episode + 1 / arm.selections))
-            )
+            return float('inf')
+        return arm.mean_reward + math.sqrt(
+            min(0.25, self.arm_variance_ub(arm)) * 
+            math.log(self.episode + 1) / arm.selections
+        )
 
     def selection_policy(self) -> str:
         chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
         chosen_arm.select()
+        logger.debug(f"Selected arm {chosen_arm.name} based on UCB1-Tuned bounds")
         return chosen_arm.name
 
     def reward_policy(self, name: str, reward: Union[int, float]):
         arm = self.arm(name)
         arm.reward(reward)
         arm.rewards_sq += reward ** 2
-
-
-class UCB2(Agent):
-    name = 'upper-confidence-bound-2-bandit'
-
-    def __init__(self,
-                 arms: Optional[List[Arm]] = None,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 alpha: float = 0.1
-                 ):
-        self.alpha = alpha
-        self._arm_vars_hook(r=0)
-        self._ss = SuccessiveSelector()
-        super().__init__(arms, episodes, reset_at_end, callbacks)
-
-    def calc_upper_bounds(self, arm) -> float:
-        if arm.selections == 0:
-            return 1e500
-        else:
-            tau = self.tau(arm.r)
-            return (arm.mean_reward + (
-                math.sqrt((1 + self.alpha) * math.log(math.e * self.episode / tau) / 2 * tau)
-            )
-                    )
-
-    def calc_n_recursion(self, r) -> int:
-        return self.tau(r+1) - self.tau(r)
-
-    def tau(self, r) -> int:
-        return math.ceil((1 + self.alpha) ** r)
-
-    def selection_policy(self) -> str:
-        if self._ss.in_recurrence:
-            chosen_arm_name = self._ss.step()
-            chosen_arm = self.arm(chosen_arm_name)
-        else:
-            chosen_arm = max(self.active_arms, key=lambda x: self.calc_upper_bounds(x))
-            self._ss.set_recurrence(chosen_arm.name, self.calc_n_recursion(chosen_arm.r))
-            chosen_arm.r += 1
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_policy(self, name: str, reward: Union[int, float]):
-        self.arm(name).reward(reward)
-
-
-class VDBE(Agent):
-    name = 'epsilon-greedy-vdbe-bandit'
-
-    def __init__(self,
-                 arms: Optional[List[Arm]] = None,
-                 episodes: int = 100,
-                 reset_at_end: bool = False,
-                 callbacks: Optional[list] = None,
-                 sigma: float = 0.5,
-                 init_epsilon: float = 0.3
-                 ):
-        super().__init__(arms, episodes, reset_at_end, callbacks)
-        self.sigma = sigma
-        self.init_epsilon = init_epsilon
-        self._prev_epsilon = self.init_epsilon
-        self._previous_mean_reward = self.agent_mean_reward
-
-    @property
-    def delta(self) -> float:
-        if self.episode != 0:
-            return 1 / self.episode
-        else:
-            return 1.0
-
-    @property
-    def action_value(self) -> float:
-        prior = 1 - math.exp(-1 * abs(self.agent_mean_reward - self._previous_mean_reward) / self.sigma)
-        return (1 - prior) / (1 + prior)
-
-    @property
-    def epsilon(self) -> float:
-        return self.delta * self.action_value + (1 - self.delta) * self._prev_epsilon
-
-    def selection_policy(self) -> str:
-        if random.random() > self.epsilon:
-            chosen_arm = max(self.active_arms, key=lambda x: x.mean_reward)
-        else:
-            chosen_arm = random.choice(self.active_arms)
-        chosen_arm.select()
-        return chosen_arm.name
-
-    def reward_policy(self, name: str, reward: Union[int, float]):
-        self._prev_epsilon = self.epsilon
-        self._previous_mean_reward = self.agent_mean_reward
-        self.arm(name).reward(reward)
+        logger.debug(f"Arm {name} received reward {reward}")
